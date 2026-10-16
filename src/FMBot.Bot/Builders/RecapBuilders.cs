@@ -37,6 +37,7 @@ public class RecapBuilders
     private readonly PuppeteerService _puppeteerService;
     private readonly IChartImageFallback _chartImageFallback;
     private readonly ChartService _chartService;
+    private readonly UpdateService _updateService;
     private readonly TrackBuilders _trackBuilders;
     private readonly AlbumBuilders _albumBuilders;
     private readonly ArtistBuilders _artistBuilders;
@@ -49,7 +50,7 @@ public class RecapBuilders
         GenreService genreService, IDataSourceFactory dataSourceFactory, TimeService timeService,
         ArtistsService artistsService, AlbumService albumService, TrackService trackService,
         CensorService censorService, PuppeteerService puppeteerService, IChartImageFallback chartImageFallback,
-        ChartService chartService, TrackBuilders trackBuilders, AlbumBuilders albumBuilders, ArtistBuilders artistBuilders,
+        ChartService chartService, UpdateService updateService, TrackBuilders trackBuilders, AlbumBuilders albumBuilders, ArtistBuilders artistBuilders,
         GenreBuilders genreBuilders, CountryBuilders countryBuilders, GameBuilders gameBuilders,
         ChartBuilders chartBuilders)
     {
@@ -65,6 +66,7 @@ public class RecapBuilders
         this._puppeteerService = puppeteerService;
         this._chartImageFallback = chartImageFallback;
         this._chartService = chartService;
+        this._updateService = updateService;
         this._trackBuilders = trackBuilders;
         this._albumBuilders = albumBuilders;
         this._artistBuilders = artistBuilders;
@@ -350,6 +352,11 @@ public class RecapBuilders
                 var timeZone =
                     SettingService.ResolveTimeZone(userSettings.TimeZone ?? "Eastern Standard Time");
 
+                if (timeSettings.EndDateTime >= DateTime.UtcNow.AddDays(-7))
+                {
+                    await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
+                }
+
                 var filteredPlays = (await this._playService.GetUserPlaysForPeriod(userSettings.UserId,
                     timeSettings.StartDateTime, timeSettings.EndDateTime)).ToList();
 
@@ -530,12 +537,19 @@ public class RecapBuilders
 
         var supporter = SupporterService.IsSupporter(userSettings.UserType);
 
+        if (timeSettings.EndDateTime >= DateTime.UtcNow.AddDays(-7))
+        {
+            await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
+        }
+
+        var fullCharts = !supporter && timeSettings.UseCustomTimePeriod;
+
         var topArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
-            500, useCache: true);
+            fullCharts ? 1000 : 500, useCache: true);
         var topTracksTask = this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings,
-            5, useCache: true);
+            fullCharts ? 1000 : 5, useCache: true);
         var topAlbumsTask = this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings,
-            100, useCache: true);
+            fullCharts ? 1000 : 100, useCache: true);
         var playsTask = this._playService.GetUserPlaysForPeriod(userSettings.UserId, timeSettings.StartDateTime,
             timeSettings.EndDateTime);
         var scrobbleCountTask = supporter
@@ -598,9 +612,7 @@ public class RecapBuilders
         }
 
         var topArtistLabel = context.Localize("recap.card.topArtist");
-        if (plays.Count > 0 &&
-            (supporter || await this._playService.GetNonSupporterHistoryStart(userSettings.UserId) <=
-                timeSettings.StartDateTime))
+        if (supporter && plays.Count > 0)
         {
             var periodStart = timeSettings.StartDateTime ?? plays.Min(m => m.TimePlayed);
             var daily = timeSettings.PlayDays <= 120;
@@ -650,26 +662,36 @@ public class RecapBuilders
             }
         }
 
-        var artistCount = supporter || topArtists.Content.TotalAmount is not > 0
-            ? plays.Select(s => s.ArtistName).Distinct(StringComparer.OrdinalIgnoreCase).Count()
-            : topArtists.Content.TotalAmount.Value;
-        stats.Add(CardStat(context, artistCount, context.LocalizeCount("shared.artists", artistCount)));
+        var artistCount = PeriodCount(topArtists.Content.TotalAmount, topArtists.Content.TopArtists.Count,
+            () => plays.Select(s => s.ArtistName).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        if (artistCount.HasValue)
+        {
+            stats.Add(CardStat(context, artistCount.Value,
+                context.LocalizeCount("shared.artists", artistCount.Value)));
+        }
 
         if (!supporter)
         {
-            var albumCount = topAlbums.Content?.TotalAmount is > 0
-                ? topAlbums.Content.TotalAmount.Value
-                : plays.Where(w => w.AlbumName != null)
+            var albumCount = PeriodCount(topAlbums.Content?.TotalAmount, topAlbums.Content?.TopAlbums?.Count,
+                () => plays.Where(w => w.AlbumName != null)
                     .Select(s => $"{s.ArtistName} - {s.AlbumName}")
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Count();
-            stats.Add(CardStat(context, albumCount, context.LocalizeCount("shared.albums", albumCount)));
+                    .Count());
+            if (albumCount.HasValue)
+            {
+                stats.Add(CardStat(context, albumCount.Value,
+                    context.LocalizeCount("shared.albums", albumCount.Value)));
+            }
         }
 
-        var trackCount = supporter || topTracks.Content?.TotalAmount is not > 0
-            ? plays.Select(s => $"{s.ArtistName} - {s.TrackName}").Distinct(StringComparer.OrdinalIgnoreCase).Count()
-            : topTracks.Content.TotalAmount.Value;
-        stats.Add(CardStat(context, trackCount, context.LocalizeCount("shared.tracks", trackCount)));
+        var trackCount = PeriodCount(topTracks.Content?.TotalAmount, topTracks.Content?.TopTracks?.Count,
+            () => plays.Select(s => $"{s.ArtistName} - {s.TrackName}").Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count());
+        if (trackCount.HasValue)
+        {
+            stats.Add(CardStat(context, trackCount.Value,
+                context.LocalizeCount("shared.tracks", trackCount.Value)));
+        }
 
         var genres = await this._genreService.GetTopGenresForTopArtists(topArtists.Content.TopArtists);
 
@@ -710,6 +732,21 @@ public class RecapBuilders
         });
 
         return response;
+
+        long? PeriodCount(long? lastFmTotal, int? lastFmListed, Func<int> fromPlays)
+        {
+            if (supporter)
+            {
+                return fromPlays();
+            }
+
+            if (lastFmTotal > 0)
+            {
+                return lastFmTotal;
+            }
+
+            return fullCharts && lastFmListed < 1000 ? lastFmListed : null;
+        }
     }
 
     private async Task FillTrackCovers(List<TopTrack> tracks, ICollection<UserPlay> plays, string lastFmUserName)

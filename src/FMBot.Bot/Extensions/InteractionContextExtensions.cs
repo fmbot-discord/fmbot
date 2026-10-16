@@ -51,16 +51,23 @@ public static class InteractionContextExtensions
 
             var responseTimeMs = (long)(DateTimeOffset.UtcNow - Snowflake.Timestamp(context.Interaction.Id)).TotalMilliseconds;
 
+            var logger = context.Interaction switch
+            {
+                UserCommandInteraction userCommand => Log.ForContext("targetUserId", userCommand.Data.TargetUser?.Id),
+                MessageCommandInteraction messageCommand => Log.ForContext("targetMessageId", messageCommand.Data.TargetMessage?.Id),
+                _ => Log.Logger
+            };
+
             if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
                 !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
             {
-                Log.Information(
+                logger.Information(
                     "SlashCommandUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {responseTimeMs}ms | {messageContent}",
                     context.User?.Username, context.User?.Id, commandResponse, responseTimeMs, commandName);
             }
             else
             {
-                Log.Information(
+                logger.Information(
                     "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {responseTimeMs}ms | {messageContent}",
                     context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
                     responseTimeMs, commandName);
@@ -103,6 +110,20 @@ public static class InteractionContextExtensions
                 {
                     options = null;
                 }
+            }
+            else if (context.Interaction is UserCommandInteraction { Data.TargetUser: not null } userCommandInteraction)
+            {
+                options = new Dictionary<string, string>
+                {
+                    { "user", userCommandInteraction.Data.TargetUser.Id.ToString() }
+                };
+            }
+            else if (context.Interaction is MessageCommandInteraction { Data.TargetMessage: not null } messageCommandInteraction)
+            {
+                options = new Dictionary<string, string>
+                {
+                    { "message", messageCommandInteraction.Data.TargetMessage.Id.ToString() }
+                };
             }
 
             await userService.InsertAndCompleteInteractionAsync(
