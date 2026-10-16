@@ -126,7 +126,15 @@ public class PuppeteerService : IDisposable
 
         if (crownText != null)
         {
-            extraHeight += 96;
+            extraHeight += 110;
+
+            var crownTextLength = Regex.Replace(crownText, "<.*?>", "").Length;
+            if (crownTextLength > 55)
+            {
+                var lines = crownTextLength / 55;
+
+                extraHeight += lines * 42;
+            }
         }
 
         await page.SetViewportAsync(new ViewPortOptions
@@ -211,7 +219,7 @@ public class PuppeteerService : IDisposable
             var positionCounter = $"{indexNumber}.";
             if (userCrown != null && userCrown.UserId == user.UserId)
             {
-                positionCounter = "👑 ";
+                positionCounter = "👑";
             }
 
             userList.Append(GetWhoKnowsLine(positionCounter,
@@ -345,7 +353,7 @@ public class PuppeteerService : IDisposable
 
         content = content.Replace("{{name}}", sanitizer.Sanitize(name) + "'s");
         content = content.Replace("{{title}}", sanitizer.Sanitize(title));
-        content = content.Replace("{{time}}", $"{sanitizer.Sanitize(time)} · Playcounts");
+        content = content.Replace("{{time}}", $"{sanitizer.Sanitize(time)} - Plays");
         content = content.Replace("{{type}}", sanitizer.Sanitize(type));
 
         content = content.Replace("{{totalDifferent}}", totalDifferent.Format(numberFormat));
