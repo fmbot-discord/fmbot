@@ -36,6 +36,7 @@ public class RecapBuilders
     private readonly CensorService _censorService;
     private readonly PuppeteerService _puppeteerService;
     private readonly IChartImageFallback _chartImageFallback;
+    private readonly ChartService _chartService;
     private readonly TrackBuilders _trackBuilders;
     private readonly AlbumBuilders _albumBuilders;
     private readonly ArtistBuilders _artistBuilders;
@@ -48,7 +49,7 @@ public class RecapBuilders
         GenreService genreService, IDataSourceFactory dataSourceFactory, TimeService timeService,
         ArtistsService artistsService, AlbumService albumService, TrackService trackService,
         CensorService censorService, PuppeteerService puppeteerService, IChartImageFallback chartImageFallback,
-        TrackBuilders trackBuilders, AlbumBuilders albumBuilders, ArtistBuilders artistBuilders,
+        ChartService chartService, TrackBuilders trackBuilders, AlbumBuilders albumBuilders, ArtistBuilders artistBuilders,
         GenreBuilders genreBuilders, CountryBuilders countryBuilders, GameBuilders gameBuilders,
         ChartBuilders chartBuilders)
     {
@@ -63,6 +64,7 @@ public class RecapBuilders
         this._censorService = censorService;
         this._puppeteerService = puppeteerService;
         this._chartImageFallback = chartImageFallback;
+        this._chartService = chartService;
         this._trackBuilders = trackBuilders;
         this._albumBuilders = albumBuilders;
         this._artistBuilders = artistBuilders;
@@ -568,24 +570,20 @@ public class RecapBuilders
         await this._artistsService.FillArtistImages(artists);
         await FillTrackCovers(tracks, plays, userSettings.UserNameLastFm);
 
-        var artistItems = new List<RecapCardItem>();
-        foreach (var artist in artists)
-        {
-            artistItems.Add(new RecapCardItem(artist.ArtistName,
-                context.LocalizeCount("shared.plays", artist.UserPlaycount),
-                await SafeArtistImage(context, artist.ArtistImageUrl, artist.ArtistName)));
-        }
-
-        var trackItems = new List<RecapCardItem>();
-        foreach (var track in tracks)
-        {
-            trackItems.Add(new RecapCardItem(track.TrackName, track.ArtistName,
-                await SafeAlbumImage(context, track.AlbumCoverUrl, track.AlbumName, track.ArtistName)));
-        }
-
         var topArtist = artists[0];
 
-        var photoUrl = artistItems[0].ImageUrl;
+        var photoTask = SafeArtistImage(context, topArtist.ArtistImageUrl, topArtist.ArtistName, 640);
+        var artistImages = await Task.WhenAll(artists.Select(s =>
+            SafeArtistImage(context, s.ArtistImageUrl, s.ArtistName, 104)));
+        var trackImages = await Task.WhenAll(tracks.Select(s =>
+            SafeAlbumImage(context, s.AlbumCoverUrl, s.AlbumName, s.ArtistName, 104)));
+
+        var artistItems = artists.Select((s, i) => new RecapCardItem(s.ArtistName,
+            context.LocalizeCount("shared.plays", s.UserPlaycount), artistImages[i])).ToList();
+        var trackItems = tracks.Select((s, i) => new RecapCardItem(s.TrackName, s.ArtistName, trackImages[i]))
+            .ToList();
+
+        var photoUrl = await photoTask;
         if (photoUrl == null)
         {
             var topArtistAlbum = topAlbums.Content?.TopAlbums?.FirstOrDefault(f =>
@@ -595,7 +593,7 @@ public class RecapBuilders
             {
                 await this._albumService.FillMissingAlbumCovers([topArtistAlbum]);
                 photoUrl = await SafeAlbumImage(context, topArtistAlbum.AlbumCoverUrl, topArtistAlbum.AlbumName,
-                    topArtistAlbum.ArtistName);
+                    topArtistAlbum.ArtistName, 640);
             }
         }
 
@@ -761,7 +759,7 @@ public class RecapBuilders
         return new RecapCardStat(number, text.Replace(number, "").Trim());
     }
 
-    private async Task<string> SafeArtistImage(ContextModel context, string imageUrl, string artistName)
+    private async Task<string> SafeArtistImage(ContextModel context, string imageUrl, string artistName, int size)
     {
         if (string.IsNullOrWhiteSpace(imageUrl))
         {
@@ -771,11 +769,14 @@ public class RecapBuilders
         var result =
             await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, artistName);
 
-        return result == CensorService.CensorResult.Safe ? imageUrl : null;
+        return result == CensorService.CensorResult.Safe
+            ? await this._chartService.GetCoverDataUriAsync(imageUrl,
+                ChartRenderer.ArtistUrlToCacheFilePath(artistName), size)
+            : null;
     }
 
     private async Task<string> SafeAlbumImage(ContextModel context, string imageUrl, string albumName,
-        string artistName)
+        string artistName, int size)
     {
         if (string.IsNullOrWhiteSpace(imageUrl))
         {
@@ -785,6 +786,14 @@ public class RecapBuilders
         var result = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
             albumName, artistName, imageUrl);
 
-        return result == CensorService.CensorResult.Safe ? imageUrl : null;
+        if (result != CensorService.CensorResult.Safe)
+        {
+            return null;
+        }
+
+        return albumName != null
+            ? await this._chartService.GetCoverDataUriAsync(imageUrl,
+                ChartRenderer.AlbumUrlToCacheFilePath(albumName, artistName), size)
+            : imageUrl;
     }
 }

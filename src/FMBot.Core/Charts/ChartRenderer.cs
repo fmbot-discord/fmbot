@@ -322,6 +322,28 @@ public class ChartRenderer
         return (fetched, true);
     }
 
+    public async Task<string> GetCoverDataUriAsync(string url, string localPath, int size)
+    {
+        var (image, validImage) = await LoadCoverAsync(url, localPath, size, this._unknownImagePath);
+        using (image)
+        {
+            if (!validImage)
+            {
+                return null;
+            }
+
+            var longestSide = Math.Max(image.Width, image.Height);
+            using var resized = longestSide > size
+                ? image.Resize(new SKImageInfo(Math.Max(1, image.Width * size / longestSide),
+                    Math.Max(1, image.Height * size / longestSide)), new SKSamplingOptions(SKCubicResampler.Mitchell))
+                : null;
+            using var encoded = SKImage.FromBitmap(resized ?? image);
+            using var data = encoded.Encode(SKEncodedImageFormat.Webp, 90);
+
+            return $"data:image/webp;base64,{Convert.ToBase64String(data.AsSpan())}";
+        }
+    }
+
     private static readonly Regex LastfmImageUrlRegex =
         new(@"^(https://[a-z-]*lastfm[a-z-]*\.freetls\.fastly\.net/i/u/)([0-9a-f]+\.[a-z]+)$", RegexOptions.Compiled);
 
