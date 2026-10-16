@@ -58,14 +58,14 @@ public class AdminCommands(
     AliasService aliasService,
     WhoKnowsFilterService whoKnowsFilterService,
     UpdateService updateService,
-    PlayService playService,
     ShardedGatewayClient client,
     WebhookService webhookService,
     TrackService trackService,
     WhoKnowsTrackService whoKnowsTrackService,
     TagService tagService,
     DmNotificationService dmNotificationService,
-    IDbContextFactory<FMBotDbContext> contextFactory)
+    IDbContextFactory<FMBotDbContext> contextFactory,
+    ImportBuilders importBuilders)
     : BaseCommandModule(botSettings)
 {
     private InteractiveService Interactivity { get; } = interactivity;
@@ -3333,180 +3333,12 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 return;
             }
 
-            var allPlays = await playService.GetAllUserPlays(dbUser.UserId, false);
-            var allFinalizedPlays = await playService.GetAllUserPlays(dbUser.UserId, true);
+            var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await importBuilders.ImportDebug(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, dbUser.DataSource);
 
-            var description = new StringBuilder();
-
-            string artistName = null;
-            if (!string.IsNullOrWhiteSpace(userSettings.NewSearchValue))
-            {
-                description.AppendLine($"Filtering to artist `{userSettings.NewSearchValue}`");
-                description.AppendLine();
-                artistName = userSettings.NewSearchValue;
-            }
-
-            if (dbUser.UserType != UserType.User)
-            {
-                description.AppendLine(
-                    $"**{StringExtensions.Sanitize(userSettings.DisplayName)} {dbUser.UserType.UserTypeToIcon()}**");
-            }
-
-            if (dbUser.DataSource != DataSource.LastFm)
-            {
-                var name = dbUser.DataSource.GetAttribute<OptionAttribute>().Name;
-
-                switch (dbUser.DataSource)
-                {
-                    case DataSource.FullImportThenLastFm:
-                    case DataSource.ImportThenFullLastFm:
-                    case DataSource.MergedDeduplicated:
-                        description.AppendLine($"Imported: {name}");
-                        break;
-                    case DataSource.LastFm:
-                    default:
-                        break;
-                }
-
-                description.AppendLine();
-
-                var firstImportPlay = allPlays
-                    .OrderBy(o => o.TimePlayed)
-                    .Where(w => artistName == null ||
-                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
-                if (firstImportPlay != null)
-                {
-                    var dateValue = ((DateTimeOffset)firstImportPlay.TimePlayed).ToUnixTimeSeconds();
-                    description.AppendLine($"First imported play: <t:{dateValue}:F>");
-                }
-
-                description.AppendLine($"Imported play count: `{allPlays
-                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource != PlaySource.LastFm)}`");
-
-                var lastImportPlay = allPlays
-                    .OrderByDescending(o => o.TimePlayed)
-                    .Where(w => artistName == null ||
-                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
-                if (lastImportPlay != null)
-                {
-                    var dateValue = ((DateTimeOffset)lastImportPlay.TimePlayed).ToUnixTimeSeconds();
-                    description.AppendLine($"Last imported play: <t:{dateValue}:F>");
-                }
-
-                description.AppendLine();
-                var firstFinalizedImportPlay = allFinalizedPlays
-                    .OrderBy(o => o.TimePlayed)
-                    .Where(w => artistName == null ||
-                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
-                if (firstFinalizedImportPlay != null)
-                {
-                    var dateValue = ((DateTimeOffset)firstFinalizedImportPlay.TimePlayed).ToUnixTimeSeconds();
-                    description.AppendLine($"First imported play after filtering: <t:{dateValue}:F>");
-                }
-
-                description.AppendLine($"Imported play count after filtering: `{allFinalizedPlays
-                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource != PlaySource.LastFm)}`");
-
-                var lastFinalizedImportPlay = allFinalizedPlays
-                    .OrderByDescending(o => o.TimePlayed)
-                    .Where(w => artistName == null ||
-                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
-                if (lastFinalizedImportPlay != null)
-                {
-                    var dateValue = ((DateTimeOffset)lastFinalizedImportPlay.TimePlayed).ToUnixTimeSeconds();
-                    description.AppendLine($"Last imported play after filtering: <t:{dateValue}:F>");
-                }
-
-                description.AppendLine();
-            }
-
-            var firstLfmPlay = allPlays
-                .OrderBy(o => o.TimePlayed)
-                .Where(w => artistName == null ||
-                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
-            if (firstLfmPlay != null)
-            {
-                var dateValue = ((DateTimeOffset)firstLfmPlay.TimePlayed).ToUnixTimeSeconds();
-                description.AppendLine($"First Last.fm play: <t:{dateValue}:F>");
-            }
-
-            description.AppendLine($"Last.fm play count: `{allPlays
-                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource == PlaySource.LastFm)}`");
-
-            var lastLfmPlay = allPlays
-                .OrderByDescending(o => o.TimePlayed)
-                .Where(w => artistName == null ||
-                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
-            if (lastLfmPlay != null)
-            {
-                var dateValue = ((DateTimeOffset)lastLfmPlay.TimePlayed).ToUnixTimeSeconds();
-                description.AppendLine($"Last Last.fm play: <t:{dateValue}:F>");
-            }
-
-            description.AppendLine();
-
-            var firstFilteredLfmPlay = allFinalizedPlays
-                .OrderBy(o => o.TimePlayed)
-                .Where(w => artistName == null ||
-                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
-            if (firstFilteredLfmPlay != null)
-            {
-                var dateValue = ((DateTimeOffset)firstFilteredLfmPlay.TimePlayed).ToUnixTimeSeconds();
-                description.AppendLine($"First Last.fm play after filtering: <t:{dateValue}:F>");
-            }
-
-            description.AppendLine($"Last.fm play count after filtering: `{allFinalizedPlays
-                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource == PlaySource.LastFm)}`");
-
-            var lastFilteredLfmPlay = allFinalizedPlays
-                .OrderByDescending(o => o.TimePlayed)
-                .Where(w => artistName == null ||
-                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
-                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
-            if (lastFilteredLfmPlay != null)
-            {
-                var dateValue = ((DateTimeOffset)lastFilteredLfmPlay.TimePlayed).ToUnixTimeSeconds();
-                description.AppendLine($"Last Last.fm play after filtering: <t:{dateValue}:F>");
-            }
-
-            description.AppendLine();
-
-            var firstFilteredPlay = allFinalizedPlays
-                .OrderBy(o => o.TimePlayed)
-                .FirstOrDefault(w =>
-                    artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
-            if (firstFilteredPlay != null)
-            {
-                var dateValue = ((DateTimeOffset)firstFilteredPlay.TimePlayed).ToUnixTimeSeconds();
-                description.AppendLine($"Final first play: <t:{dateValue}:F>");
-            }
-
-            description.AppendLine(
-                $"Final play count: `{allFinalizedPlays.Count(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))}`");
-
-            var lastFilteredPlay = allFinalizedPlays
-                .OrderByDescending(o => o.TimePlayed)
-                .FirstOrDefault(w =>
-                    artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
-            if (lastFilteredPlay != null)
-            {
-                var dateValue = ((DateTimeOffset)lastFilteredPlay.TimePlayed).ToUnixTimeSeconds();
-                description.AppendLine($"Final last play: <t:{dateValue}:F>");
-            }
-
-            this._embed.WithDescription(description.ToString());
-            this._embed.WithFooter("Import debug");
-
-            await Context.Client.Rest.SendMessageAsync(Context.Message.ChannelId, new MessageProperties().AddEmbeds(this._embed));
-
-            await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.Ok }, userService);
+            await this.Context.SendResponse(this.Interactivity, response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)
         {
