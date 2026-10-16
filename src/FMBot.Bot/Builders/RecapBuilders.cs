@@ -28,6 +28,7 @@ public class RecapBuilders
     private readonly UserService _userService;
     private readonly PlayService _playService;
     private readonly GenreService _genreService;
+    private readonly CountryService _countryService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly TimeService _timeService;
     private readonly ArtistsService _artistsService;
@@ -47,7 +48,8 @@ public class RecapBuilders
     private readonly ChartBuilders _chartBuilders;
 
     public RecapBuilders(UserService userService, PlayService playService,
-        GenreService genreService, IDataSourceFactory dataSourceFactory, TimeService timeService,
+        GenreService genreService, CountryService countryService, IDataSourceFactory dataSourceFactory,
+        TimeService timeService,
         ArtistsService artistsService, AlbumService albumService, TrackService trackService,
         CensorService censorService, PuppeteerService puppeteerService, IChartImageFallback chartImageFallback,
         ChartService chartService, UpdateService updateService, TrackBuilders trackBuilders, AlbumBuilders albumBuilders, ArtistBuilders artistBuilders,
@@ -57,6 +59,7 @@ public class RecapBuilders
         this._userService = userService;
         this._playService = playService;
         this._genreService = genreService;
+        this._countryService = countryService;
         this._dataSourceFactory = dataSourceFactory;
         this._timeService = timeService;
         this._artistsService = artistsService;
@@ -545,11 +548,11 @@ public class RecapBuilders
         var fullCharts = !supporter && timeSettings.UseCustomTimePeriod;
 
         var topArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
-            fullCharts ? 1000 : 500, useCache: true);
+            supporter ? 500 : 1000, useCache: true);
         var topTracksTask = this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings,
-            fullCharts ? 1000 : 5, useCache: true);
+            5, useCache: true);
         var topAlbumsTask = this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings,
-            fullCharts ? 1000 : 100, useCache: true);
+            100, useCache: true);
         var playsTask = this._playService.GetUserPlaysForPeriod(userSettings.UserId, timeSettings.StartDateTime,
             timeSettings.EndDateTime);
         var scrobbleCountTask = supporter
@@ -661,36 +664,53 @@ public class RecapBuilders
                     $" - {context.LocalizeCount("shared.minutes", (long)topArtistTime.TotalMinutes)}";
             }
         }
+        else
+        {
+            var periodStart = timeSettings.StartDateTime.GetValueOrDefault();
+            if (userSettings.RegisteredLastFm > periodStart)
+            {
+                periodStart = userSettings.RegisteredLastFm.Value;
+            }
 
-        var artistCount = PeriodCount(topArtists.Content.TotalAmount, topArtists.Content.TopArtists.Count,
-            () => plays.Select(s => s.ArtistName).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+            var periodEnd = timeSettings.EndDateTime < DateTime.UtcNow
+                ? timeSettings.EndDateTime.Value
+                : DateTime.UtcNow;
+            var days = (periodEnd - periodStart).TotalDays;
+            if (days >= 2)
+            {
+                var perDay = scrobbles / days;
+                stats.Add(new RecapCardStat(Math.Round(perDay, perDay < 10 ? 1 : 0).Format(context.NumberFormat),
+                    context.Localize("recap.card.perDay")));
+            }
+        }
+
+        var artistCount = PeriodArtistCount();
         if (artistCount.HasValue)
         {
             stats.Add(CardStat(context, artistCount.Value,
                 context.LocalizeCount("shared.artists", artistCount.Value)));
         }
-
-        if (!supporter)
+        else if (fullCharts)
         {
-            var albumCount = PeriodCount(topAlbums.Content?.TotalAmount, topAlbums.Content?.TopAlbums?.Count,
-                () => plays.Where(w => w.AlbumName != null)
-                    .Select(s => $"{s.ArtistName} - {s.AlbumName}")
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Count());
-            if (albumCount.HasValue)
-            {
-                stats.Add(CardStat(context, albumCount.Value,
-                    context.LocalizeCount("shared.albums", albumCount.Value)));
-            }
+            var cappedStat = CardStat(context, 1000, context.LocalizeCount("shared.artists", 1000));
+            stats.Add(cappedStat with { Number = $"{cappedStat.Number}+" });
         }
 
-        var trackCount = PeriodCount(topTracks.Content?.TotalAmount, topTracks.Content?.TopTracks?.Count,
-            () => plays.Select(s => $"{s.ArtistName} - {s.TrackName}").Distinct(StringComparer.OrdinalIgnoreCase)
-                .Count());
-        if (trackCount.HasValue)
+        if (supporter)
         {
-            stats.Add(CardStat(context, trackCount.Value,
-                context.LocalizeCount("shared.tracks", trackCount.Value)));
+            var trackCount = plays.Select(s => $"{s.ArtistName} - {s.TrackName}")
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
+            stats.Add(CardStat(context, trackCount, context.LocalizeCount("shared.tracks", trackCount)));
+        }
+        else
+        {
+            var countries = await this._countryService.GetTopCountriesForTopArtists(topArtists.Content.TopArtists);
+            if (countries.Count > 0)
+            {
+                stats.Add(CardStat(context, countries.Count,
+                    context.LocalizeCount("shared.countries", countries.Count)));
+            }
         }
 
         var genres = await this._genreService.GetTopGenresForTopArtists(topArtists.Content.TopArtists);
@@ -733,19 +753,31 @@ public class RecapBuilders
 
         return response;
 
-        long? PeriodCount(long? lastFmTotal, int? lastFmListed, Func<int> fromPlays)
+        long? PeriodArtistCount()
         {
             if (supporter)
             {
-                return fromPlays();
+                return plays.Select(s => s.ArtistName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
             }
 
-            if (lastFmTotal > 0)
+            if (topArtists.Content.TotalAmount > 0)
             {
-                return lastFmTotal;
+                return topArtists.Content.TotalAmount;
             }
 
-            return fullCharts && lastFmListed < 1000 ? lastFmListed : null;
+            if (!fullCharts)
+            {
+                return null;
+            }
+
+            var listed = topArtists.Content.TopArtists;
+            if (listed.Count < 1000)
+            {
+                return listed.Count;
+            }
+
+            var unlisted = scrobbles - listed.Sum(s => s.UserPlaycount);
+            return listed[^1].UserPlaycount == 1 && unlisted >= 0 ? listed.Count + unlisted : null;
         }
     }
 

@@ -151,16 +151,19 @@
             border-top: 1px solid rgba(220, 221, 222, 0.08);
         }
 
-        .stats, .lists {
-            display: grid;
+        .stats {
+            display: flex;
             column-gap: 32px;
         }
 
-        .stats {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+        .stats > div {
+            flex: 1 1 0;
+            min-width: 0;
         }
 
         .lists {
+            display: grid;
+            column-gap: 32px;
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
