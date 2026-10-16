@@ -1147,6 +1147,13 @@ public class AlbumBuilders
                 response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
                 response.ComponentsContainer.WithTextDisplay(
                     $"Sorry, but neither Last.fm nor Spotify know the tracks for {albumName}.");
+                response.ComponentsContainer.WithActionRow(new ActionRowProperties().AddComponents(
+                    new ButtonProperties(
+                        $"{InteractionConstants.Album.Info}:{dbAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                        "Album", EmojiProperties.Standard("💽"), ButtonStyle.Secondary),
+                    new ButtonProperties(
+                        $"{InteractionConstants.Album.Cover}:{dbAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion:",
+                        "Cover", EmojiProperties.Standard("🖼️"), ButtonStyle.Secondary)));
                 response.CommandResponse = CommandResponse.NotFound;
                 return response;
             }
