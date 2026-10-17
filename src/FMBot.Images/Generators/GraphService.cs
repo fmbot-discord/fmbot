@@ -34,6 +34,7 @@ public class GraphService
         DateTime? windowFrom = null, DateTime? windowUntil = null, int width = 660, int height = 165,
         GraphType style = GraphType.Line)
     {
+        dailyPlays = dailyPlays?.Where(w => w.Date.Year >= 2000).ToList();
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
             return null;
@@ -117,6 +118,7 @@ public class GraphService
     {
         var dailyTotals = dailyBase
             .Concat(dailyTop)
+            .Where(w => w.Date.Year >= 2000)
             .GroupBy(g => g.Date)
             .OrderBy(o => o.Key)
             .Select(s => new GraphPoint
