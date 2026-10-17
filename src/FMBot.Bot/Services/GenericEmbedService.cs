@@ -199,50 +199,12 @@ public static class GenericEmbedService
                 embed.AddField(localizer.Translate("errors.staffNote"), $"*\"{PublicProperties.IssuesReason}\"*");
             }
 
-            var loginCommand = PublicProperties.SlashCommands.TryGetValue("login", out var slashCommand)
-                ? $"</login:{slashCommand}>"
-                : "`/login`";
-
-            switch (responseStatus)
+            if (responseStatus == ResponseStatus.MissingParameters && expectedResultType != null)
             {
-                case ResponseStatus.Failure:
-                    var failureRate = LastfmErrorRateTracker.GetSnapshot();
-                    embed.WithDescription(localizer.Translate("errors.lastFmFailure")
-                        + (failureRate == null
-                            ? string.Empty
-                            : "\n\n" + localizer.Translate("errors.lastFmFailureRate",
-                                ("percentage", failureRate.AveragePercent.ToString("0.#", CultureInfo.InvariantCulture)),
-                                ("sparkline", failureRate.Sparkline))));
-                    break;
-                case ResponseStatus.LoginRequired:
-                    embed.WithDescription(localizer.Translate("errors.lastFmLoginRequired", ("loginCommand", loginCommand)));
-                    break;
-                case ResponseStatus.BadAuth:
-                    embed.WithDescription(localizer.Translate("errors.lastFmBadAuth", ("loginCommand", loginCommand)));
-                    break;
-                case ResponseStatus.SessionExpired:
-                    embed.WithDescription(localizer.Translate("errors.lastFmSessionExpired", ("loginCommand", loginCommand)));
-                    break;
-                case ResponseStatus.MissingParameters:
-                    if (expectedResultType != null)
-                    {
-                        embed.Title = null;
-                        embed.WithDescription(localizer.Translate($"errors.lastFmNoResult.{expectedResultType}"));
-                    }
-                    else if (message.Equals("Not found"))
-                    {
-                        embed.WithDescription(localizer.Translate("errors.lastFmUserNotFound", ("loginCommand", loginCommand)));
-                    }
-                    else
-                    {
-                        goto default;
-                    }
-
-                    break;
-                default:
-                    embed.WithDescription(message ?? localizer.Translate("errors.unknown"));
-                    break;
+                embed.Title = null;
             }
+
+            embed.WithDescription(GetLastFmErrorDescription(responseStatus, message, localizer, expectedResultType));
 
             var footer = new StringBuilder();
 
@@ -260,6 +222,77 @@ public static class GenericEmbedService
             Log.Information(
                 "Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}",
                 message, responseStatus, contextUser?.Username, contextUser?.Id, commandContent);
+        }
+    }
+
+    extension(ComponentContainerProperties container)
+    {
+        public void ErrorResponse(ResponseStatus? responseStatus, string message,
+            string commandContent, Localizer localizer, User contextUser = null, string expectedResultType = null)
+        {
+            if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
+            {
+                container.WithTextDisplay(
+                    $"**{localizer.Translate("errors.staffNote")}**\n*\"{PublicProperties.IssuesReason}\"*");
+            }
+
+            container.WithTextDisplay(GetLastFmErrorDescription(responseStatus, message, localizer, expectedResultType));
+
+            var footer = new StringBuilder();
+
+            if (responseStatus != null)
+            {
+                footer.AppendLine($"-# {localizer.Translate("errors.errorCode", ("code", responseStatus.ToString()))}");
+            }
+
+            footer.Append($"-# {localizer.Translate("errors.notAffiliated")}");
+
+            container.WithTextDisplay(footer.ToString());
+
+            container.WithAccentColor(DiscordConstants.WarningColorOrange);
+            Log.Information(
+                "Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}",
+                message, responseStatus, contextUser?.Username, contextUser?.Id, commandContent);
+        }
+    }
+
+    private static string GetLastFmErrorDescription(ResponseStatus? responseStatus, string message,
+        Localizer localizer, string expectedResultType)
+    {
+        var loginCommand = PublicProperties.SlashCommands.TryGetValue("login", out var slashCommand)
+            ? $"</login:{slashCommand}>"
+            : "`/login`";
+
+        switch (responseStatus)
+        {
+            case ResponseStatus.Failure:
+                var failureRate = LastfmErrorRateTracker.GetSnapshot();
+                return localizer.Translate("errors.lastFmFailure")
+                       + (failureRate == null
+                           ? string.Empty
+                           : "\n\n" + localizer.Translate("errors.lastFmFailureRate",
+                               ("percentage", failureRate.AveragePercent.ToString("0.#", CultureInfo.InvariantCulture)),
+                               ("sparkline", failureRate.Sparkline)));
+            case ResponseStatus.LoginRequired:
+                return localizer.Translate("errors.lastFmLoginRequired", ("loginCommand", loginCommand));
+            case ResponseStatus.BadAuth:
+                return localizer.Translate("errors.lastFmBadAuth", ("loginCommand", loginCommand));
+            case ResponseStatus.SessionExpired:
+                return localizer.Translate("errors.lastFmSessionExpired", ("loginCommand", loginCommand));
+            case ResponseStatus.MissingParameters:
+                if (expectedResultType != null)
+                {
+                    return localizer.Translate($"errors.lastFmNoResult.{expectedResultType}");
+                }
+
+                if (message.Equals("Not found"))
+                {
+                    return localizer.Translate("errors.lastFmUserNotFound", ("loginCommand", loginCommand));
+                }
+
+                goto default;
+            default:
+                return message ?? localizer.Translate("errors.unknown");
         }
     }
 

@@ -145,49 +145,22 @@ public class GenreBuilders
             pageDescriptions.Add(pageString.ToString());
         }
 
-        var paginator = new ComponentPaginatorBuilder()
-            .WithPageFactory(GeneratePage)
-            .WithPageCount(Math.Max(1, pageDescriptions.Count))
-            .WithActionOnTimeout(ActionOnStop.DisableInput);
-
-        response.ComponentPaginator = paginator;
-
-        return response;
-
-        IPage GeneratePage(IComponentPaginator p)
+        var pageFooters = new List<string>();
+        for (var i = 0; i < Math.Max(1, pageDescriptions.Count); i++)
         {
-            var container = new ComponentContainerProperties();
-
-            container.WithTextDisplay($"### {title}");
-            container.WithSeparator();
-
-            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
-            if (currentPage != null)
-            {
-                container.WithTextDisplay(currentPage.TrimEnd());
-            }
-
-            container.WithSeparator();
-
-            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
+            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (i + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (footerHint != null)
             {
                 pageFooter += $"\n-# {footerHint}";
             }
 
-            container.WithTextDisplay(pageFooter);
-
-            if (pageDescriptions.Count > 1)
-            {
-                container.WithActionRow(StringService.GetPaginationActionRow(p));
-            }
-
-            return new PageBuilder()
-                .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithMessageFlags(MessageFlags.IsComponentsV2)
-                .WithComponents([container])
-                .Build();
+            pageFooters.Add(pageFooter);
         }
+
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters);
+
+        return response;
     }
 
     public async Task<ResponseModel> TopGenresAsync(ContextModel context,
@@ -365,56 +338,26 @@ public class GenreBuilders
 
         var footerBaseText = footerBase.ToString();
 
-        var paginator = new ComponentPaginatorBuilder()
-            .WithPageFactory(GeneratePage)
-            .WithPageCount(Math.Max(1, pageDescriptions.Count))
-            .WithActionOnTimeout(ActionOnStop.DisableInput);
-
-        response.ComponentPaginator = paginator;
-        response.ResponseType = ResponseType.Paginator;
-        return response;
-
-        IPage GeneratePage(IComponentPaginator p)
+        var pageFooters = new List<string>();
+        for (var i = 0; i < pageDescriptions.Count; i++)
         {
-            var container = new ComponentContainerProperties();
-
-            container.WithTextDisplay(context.Localize("genre.top.title",
-                ("period", context.Localizer.PeriodLabel(timeSettings)),
-                ("user", userTitleWithLink)));
-            container.WithSeparator();
-
-            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
-            if (currentPage != null)
-            {
-                container.WithTextDisplay(currentPage.TrimEnd());
-            }
-
-            container.WithSeparator();
-
             var pageFooter = $"-# {footerBaseText} - {genres.Count.Format(context.NumberFormat)} total genres";
             if (pageDescriptions.Count > 1)
             {
-                pageFooter = $"-# Page {p.CurrentPageIndex + 1}/{pageDescriptions.Count} · {footerBaseText} · {genres.Count.Format(context.NumberFormat)} total genres";
+                pageFooter = $"-# Page {i + 1}/{pageDescriptions.Count} · {footerBaseText} · {genres.Count.Format(context.NumberFormat)} total genres";
             }
 
-            container.WithTextDisplay(pageFooter);
-
-            if (pageDescriptions.Count > 1)
-            {
-                container.WithActionRow(StringService.GetPaginationActionRow(p));
-            }
-
-            if (context.SelectMenu != null)
-            {
-                container.AddComponent(context.SelectMenu);
-            }
-
-            return new PageBuilder()
-                .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithMessageFlags(MessageFlags.IsComponentsV2)
-                .WithComponents([container])
-                .Build();
+            pageFooters.Add(pageFooter);
         }
+
+        var title = context.Localize("genre.top.title",
+            ("period", context.Localizer.PeriodLabel(timeSettings)),
+            ("user", userTitleWithLink));
+
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator(title, pageDescriptions, pageFooters, menu: context.SelectMenu);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
     }
 
     private async Task<(List<string> genres, StringMenuProperties selectMenu)> GetGenreOrRespond(string genreOptions,

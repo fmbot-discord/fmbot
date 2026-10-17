@@ -62,7 +62,7 @@ public class PlayCommands(
             var context = new ContextModel(this.Context, prfx, contextUser);
             var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings, "discoverydate");
             if (supporterRequiredResponse != null)
             {
                 await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
@@ -100,7 +100,7 @@ public class PlayCommands(
             var context = new ContextModel(this.Context, prfx, contextUser);
             var userSettings = await settingService.GetUser(options, contextUser, this.Context);
 
-            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings, "lastlistened");
             if (supporterRequiredResponse != null)
             {
                 await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, userService);
@@ -350,24 +350,10 @@ public class PlayCommands(
 
         try
         {
-            var loading = false;
-            if (!recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm, language))
-            {
-                await Context.Message.AddReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading));
-                loading = true;
-            }
-
             var response = await recapBuilders.RecapAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
-
-            if (loading)
-            {
-                await Context.Message.DeleteUserReactionAsync(new ReactionEmojiProperties("Loading", DiscordConstants.Loading),
-                    this._botSettings.Discord.ApplicationId.GetValueOrDefault());
-            }
-
             await this.Context.LogCommandUsedAsync(response, userService);
         }
         catch (Exception e)

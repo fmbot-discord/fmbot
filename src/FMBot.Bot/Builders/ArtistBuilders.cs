@@ -1430,31 +1430,10 @@ public class ArtistBuilders
                 .WithMaxValues(25);
         }
 
-        var paginator = new ComponentPaginatorBuilder()
-            .WithPageFactory(GeneratePage)
-            .WithPageCount(Math.Max(1, pageDescriptions.Count))
-            .WithActionOnTimeout(ActionOnStop.DisableInput);
-
-        response.ComponentPaginator = paginator;
-        response.ResponseType = ResponseType.Paginator;
-        return response;
-
-        IPage GeneratePage(IComponentPaginator p)
+        var pageFooters = new List<string>();
+        for (var i = 0; i < pageDescriptions.Count; i++)
         {
-            var container = new ComponentContainerProperties();
-
-            container.WithTextDisplay($"### {title}");
-            container.WithSeparator();
-
-            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
-            if (currentPage != null)
-            {
-                container.WithTextDisplay(currentPage.TrimEnd());
-            }
-
-            container.WithSeparator();
-
-            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
+            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (i + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
                 pageFooter += $"\n-# {context.LocalizeCount("shared.roleFilterEnabled", roles.Count)}";
@@ -1464,24 +1443,13 @@ public class ArtistBuilders
                 pageFooter += $"\n-# {footerHint}";
             }
 
-            container.WithTextDisplay(pageFooter);
-
-            if (pageDescriptions.Count > 1)
-            {
-                container.WithActionRow(StringService.GetPaginationActionRow(p));
-            }
-
-            if (roleMenu != null)
-            {
-                container.AddComponent(roleMenu);
-            }
-
-            return new PageBuilder()
-                .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithMessageFlags(MessageFlags.IsComponentsV2)
-                .WithComponents([container])
-                .Build();
+            pageFooters.Add(pageFooter);
         }
+
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters, menu: roleMenu);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
     }
 
     public async Task<ResponseModel> TopArtistsAsync(
@@ -1496,43 +1464,34 @@ public class ArtistBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var pages = new List<PageBuilder>();
+        var requesterTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        string userTitle;
-        if (!userSettings.DifferentUser)
-        {
-            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
-        {
-            userTitle = context.Localize("shared.requestedByTitle",
+        var userTitle = !userSettings.DifferentUser
+            ? requesterTitle
+            : context.Localize("shared.requestedByTitle",
                 ("user", userSettings.UserNameLastFm),
-                ("requester", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
-        }
+                ("requester", requesterTitle));
 
         var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
             $"/library/artists?{timeSettings.UrlParameter}");
-
-        response.EmbedAuthor.WithName(context.Localize("artist.top.title",
-            ("period", context.Localizer.PeriodLabel(timeSettings)), ("user", userTitle)));
-        response.EmbedAuthor.WithUrl(userUrl);
 
         var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
             timeSettings, topListSettings.ListAmount, 1, true);
 
         if (!artists.Success || artists.Content == null)
         {
-            response.Embed.ErrorResponse(artists.Error, artists.Message, "top artists", context.Localizer, context.DiscordUser);
+            response.ComponentsContainer.ErrorResponse(artists.Error, artists.Message, "top artists", context.Localizer, context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
-            response.ResponseType = ResponseType.Embed;
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
         if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
         {
-            response.Embed.WithDescription(context.Localize("artist.top.noResults", ("url", userUrl)));
+            response.ComponentsContainer.WithTextDisplay(context.Localize("artist.top.noResults", ("url", userUrl)));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
-            response.ResponseType = ResponseType.Embed;
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
@@ -1579,11 +1538,24 @@ public class ArtistBuilders
             }
         }
 
+        var titleUser = !userSettings.DifferentUser
+            ? await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser, userUrl)
+            : context.Localize("shared.requestedByTitle",
+                ("user", StringExtensions.MarkdownLink(userSettings.UserNameLastFm, userUrl)),
+                ("requester", StringExtensions.Sanitize(requesterTitle)));
+        var title = context.Localize("artist.top.title",
+            ("period", context.Localizer.PeriodLabel(timeSettings)), ("user", titleUser));
+
+        var importDescription = new StringBuilder();
+        ImportService.AddImportDescription(importDescription, artists.PlaySources);
+
         var artistPages = artists.Content.TopArtists.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
         var rnd = new Random().Next(0, 4);
+        var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
 
         foreach (var artistPage in artistPages)
         {
@@ -1613,60 +1585,71 @@ public class ArtistBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddImportDescription(footer, artists.PlaySources);
+            if (importDescription.Length > 0)
+            {
+                footer.AppendLine($"-# {importDescription.ToString().TrimEnd()}");
+            }
 
             if (artists.Content.TotalAmount.HasValue)
             {
-                footer.Append(context.LocalizeCount("artist.top.pageCounterArtists",
+                footer.AppendLine($"-# {context.LocalizeCount("artist.top.pageCounterArtists",
                     artists.Content.TotalAmount.Value,
-                    ("page", pageCounter.ToString()), ("pages", artistPages.Count.ToString())));
+                    ("page", pageCounter.ToString()), ("pages", artistPages.Count.ToString()))}");
             }
             else
             {
-                footer.Append(context.Localize("shared.pageCounter", ("page", pageCounter.ToString()),
-                    ("pages", artistPages.Count.ToString())));
+                footer.AppendLine($"-# {context.Localize("shared.pageCounter", ("page", pageCounter.ToString()),
+                    ("pages", artistPages.Count.ToString()))}");
             }
 
             if (topListSettings.Billboard)
             {
-                footer.AppendLine();
-                footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+                footer.AppendLine($"-# {StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm)}");
             }
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
-                footer.AppendLine();
-                footer.Append(context.Localize("shared.billboardHint"));
+                footer.AppendLine($"-# {context.Localize("shared.billboardHint")}");
             }
 
-            pages.Add(new PageBuilder()
-                .WithDescription(artistPageString.ToString())
-                .WithColor(DiscordConstants.LastFmColorRed)
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString()));
+            pageDescriptions.Add(artistPageString.ToString());
+            pageFooters.Add(footer.ToString());
             pageCounter++;
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters,
+                DiscordConstants.LastFmColorRed, context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
 
-    public static ResponseModel DiscoverySupporterRequired(ContextModel context, UserSettingsModel userSettings)
+    public static ResponseModel DiscoverySupporterRequired(ContextModel context, UserSettingsModel userSettings,
+        string source = "discoveries")
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.ComponentsV2
         };
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription(context.Localize("artist.discoveriesSupporterRequired"));
+            var description = source switch
+            {
+                "discoverydate" => context.Localize("artist.discoveryDateSupporterRequired"),
+                "lastlistened" => context.Localize("artist.lastListenedSupporterRequired"),
+                _ => context.Localize("artist.discoveriesSupporterRequired")
+            };
 
-            response.Components = new ActionRowProperties()
-                .WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
-            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(description));
+
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ActionRowProperties()
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
+                    context.Localize("buttons.getFmbotSupporter"), ButtonStyle.Primary)));
+
             response.CommandResponse = CommandResponse.SupporterRequired;
 
             return response;
@@ -1674,12 +1657,16 @@ public class ArtistBuilders
 
         if (userSettings.UserType == UserType.User)
         {
-            response.Embed.WithDescription(context.Localize("artist.discoveriesOtherSupporterOnly"));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.AddComponent(
+                new TextDisplayProperties(context.Localize("artist.discoveriesOtherSupporterOnly")));
 
-            response.Components = new ActionRowProperties()
-                .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
-                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "discoveries"));
-            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ActionRowProperties()
+                .AddComponents(new ButtonProperties(
+                    InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
+                    ".fmbot supporter", ButtonStyle.Secondary)));
+
             response.CommandResponse = CommandResponse.SupporterRequired;
 
             return response;
@@ -1700,18 +1687,11 @@ public class ArtistBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var pages = new List<PageBuilder>();
+        var requesterTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        string userTitle;
-        if (!userSettings.DifferentUser)
-        {
-            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
-        {
-            userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
-        }
+        var userTitle = !userSettings.DifferentUser
+            ? requesterTitle
+            : $"{userSettings.UserNameLastFm}, requested by {requesterTitle}";
 
         if (context.ContextUser.LastUpdated < DateTime.UtcNow.AddHours(-1))
         {
@@ -1720,9 +1700,6 @@ public class ArtistBuilders
 
         var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
             $"/library/artists?{timeSettings.UrlParameter}");
-
-        response.EmbedAuthor.WithName($"Discovered artists in {timeSettings.AltDescription.ToLower()} for {userTitle}");
-        response.EmbedAuthor.WithUrl(userUrl);
 
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
 
@@ -1776,10 +1753,17 @@ public class ArtistBuilders
             return response;
         }
 
+        var titleUser = !userSettings.DifferentUser
+            ? await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser, userUrl)
+            : $"{StringExtensions.MarkdownLink(userSettings.UserNameLastFm, userUrl)}, requested by {StringExtensions.Sanitize(requesterTitle)}";
+        var title = $"Discovered artists in {timeSettings.AltDescription.ToLower()} for {titleUser}";
+
         var artistPages = topNewArtists.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
+        var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
 
         foreach (var artistPage in artistPages)
         {
@@ -1797,27 +1781,21 @@ public class ArtistBuilders
                 counter++;
             }
 
-            var footer = new StringBuilder();
-
-            footer.Append(context.LocalizeCount("artist.discoveries.pageCounter", topNewArtists.Count,
-                ("page", pageCounter.ToString()), ("pages", artistPages.Count.ToString())));
-
-            pages.Add(new PageBuilder()
-                .WithDescription(artistPageString.ToString())
-                .WithColor(DiscordConstants.LastFmColorRed)
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString()));
+            pageDescriptions.Add(artistPageString.ToString());
+            pageFooters.Add($"-# {context.LocalizeCount("artist.discoveries.pageCounter", topNewArtists.Count,
+                ("page", pageCounter.ToString()), ("pages", artistPages.Count.ToString()))}");
             pageCounter++;
         }
 
-        if (artistPages.Count == 0)
+        if (pageDescriptions.Count == 0)
         {
-            pages.Add(new PageBuilder()
-                .WithDescription($"No discovered artists in {timeSettings.Description}.")
-                .WithAuthor(response.EmbedAuthor));
+            pageDescriptions.Add($"No discovered artists in {timeSettings.Description}.");
+            pageFooters.Add(null);
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters,
+                DiscordConstants.LastFmColorRed, context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

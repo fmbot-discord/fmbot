@@ -7,13 +7,20 @@
             src: url("https://fm.bot/fonts/worksans-regular.otf") format("opentype");
         }
 
+        @font-face {
+            font-family: "worksans";
+            font-weight: 600;
+            src: url("https://fm.bot/fonts/worksans-semibold.ttf") format("truetype");
+        }
+
         body {
             font-family: "worksans";
             margin-right: 36px;
             margin-left: 36px;
-            margin-top: 56px;
+            margin-top: 36px;
             background-color: #282424;
             color: #dcddde;
+            font-variant-numeric: tabular-nums;
             background: linear-gradient(0deg, rgba(0, 0, 0, 0.80), rgba(0, 0, 0, 0.65)), url('{{image-url}}');
             background-position: center;
             background-size: cover;
@@ -38,6 +45,7 @@
 
         .title {
             font-size: 32px;
+            font-weight: 600;
             background-color: #2f3136;
             padding: 20px 8px 20px 8px;
             margin-top: -12px;
@@ -57,7 +65,7 @@
         }
 
         .result-container {
-            margin-top: 56px;
+            margin-top: 40px;
             display: flex;
             margin-left: -6px;
             margin-right: -6px;
@@ -83,7 +91,13 @@
         }
 
         .stat-view {
-            margin-top: -20px;
+            display: table;
+            margin: -20px auto 0 auto;
+        }
+
+        .stat-view b {
+            font-weight: 400;
+            color: #b9bbbe;
         }
 
         .flex-wrap>* {
@@ -98,10 +112,11 @@
         }
 
         .branding {
-            margin-bottom: -20px;
-            display: inline-block;
+            margin-top: 8px;
+            margin-bottom: -28px;
+            line-height: 20px;
+            text-align: center;
             color: rgba(220, 221, 222, 0.4);
-            padding-left: 4px;
         }
 
         .result-list {
@@ -122,6 +137,7 @@
             margin-bottom: 16px;
             overflow: hidden;
             white-space: nowrap;
+            line-height: 33px;
         }
         .num {
             width: 32px;
@@ -129,14 +145,17 @@
             text-align: center;
             padding-left: -4px;
             max-width: 52px !important;
+            color: #b9bbbe;
         }
         .own-num {
             width: {{num-width}}px !important;
         }
         .sub {
             font-size: 20px;
+            line-height: 24px;
             min-width: 400px;
             margin-bottom: 4px;
+            color: #b9bbbe;
         }
 
         .hidden {
@@ -164,10 +183,8 @@
                     {{users}}
                 </ul>
             </div>
-            <div class="whoknows subtitle bottom align-center flex-wrap stat-view">
-                <span class="float-left {{diffCount}}">{{totalDifferent}} different {{type}}</span>
-                <span class="{{diffCount}}"><b>·</b></span>
-                <span class="float-right">{{totalPlays}} total plays</span>
+            <div class="whoknows subtitle stat-view">
+                <span class="{{diffCount}}">{{totalDifferent}} different {{type}} <b>-</b> </span>{{totalPlays}} total plays
             </div>
             <div class="floatleft bottom branding">
                 Powered by .fmbot

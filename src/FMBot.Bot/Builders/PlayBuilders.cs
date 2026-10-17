@@ -1899,7 +1899,7 @@ public class PlayBuilder
             response.Embed.WithDescription(context.Localize("milestone.artistSupporterRequired"));
 
             response.Components = new ActionRowProperties()
-                .WithButton(context.Localize("buttons.getSupporter"), style: ButtonStyle.Primary,
+                .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "artistmilestone"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;

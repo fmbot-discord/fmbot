@@ -1073,31 +1073,10 @@ public class AlbumBuilders
                 .WithMaxValues(25);
         }
 
-        var paginator = new ComponentPaginatorBuilder()
-            .WithPageFactory(GeneratePage)
-            .WithPageCount(Math.Max(1, pageDescriptions.Count))
-            .WithActionOnTimeout(ActionOnStop.DisableInput);
-
-        response.ComponentPaginator = paginator;
-        response.ResponseType = ResponseType.Paginator;
-        return response;
-
-        IPage GeneratePage(IComponentPaginator p)
+        var pageFooters = new List<string>();
+        for (var i = 0; i < pageDescriptions.Count; i++)
         {
-            var container = new ComponentContainerProperties();
-
-            container.WithTextDisplay($"### {title}");
-            container.WithSeparator();
-
-            var currentPage = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
-            if (currentPage != null)
-            {
-                container.WithTextDisplay(currentPage.TrimEnd());
-            }
-
-            container.WithSeparator();
-
-            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (p.CurrentPageIndex + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
+            var pageFooter = $"-# {footerLabel} - {context.Localize("shared.pageCounter", ("page", (i + 1).ToString()), ("pages", pageDescriptions.Count.ToString()))}";
             if (roles != null && roles.Any())
             {
                 pageFooter += $"\n-# {context.LocalizeCount("shared.roleFilterEnabled", roles.Count)}";
@@ -1107,24 +1086,13 @@ public class AlbumBuilders
                 pageFooter += $"\n-# {footerHint}";
             }
 
-            container.WithTextDisplay(pageFooter);
-
-            if (pageDescriptions.Count > 1)
-            {
-                container.WithActionRow(StringService.GetPaginationActionRow(p));
-            }
-
-            if (roleMenu != null)
-            {
-                container.AddComponent(roleMenu);
-            }
-
-            return new PageBuilder()
-                .WithAllowedMentions(AllowedMentionsProperties.None)
-                .WithMessageFlags(MessageFlags.IsComponentsV2)
-                .WithComponents([container])
-                .Build();
+            pageFooters.Add(pageFooter);
         }
+
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters, menu: roleMenu);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
     }
 
     public async Task<ResponseModel> AlbumTracksAsync(
@@ -1179,6 +1147,13 @@ public class AlbumBuilders
                 response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
                 response.ComponentsContainer.WithTextDisplay(
                     $"Sorry, but neither Last.fm nor Spotify know the tracks for {albumName}.");
+                response.ComponentsContainer.WithActionRow(new ActionRowProperties().AddComponents(
+                    new ButtonProperties(
+                        $"{InteractionConstants.Album.Info}:{dbAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}",
+                        "Album", EmojiProperties.Standard("💽"), ButtonStyle.Secondary),
+                    new ButtonProperties(
+                        $"{InteractionConstants.Album.Cover}:{dbAlbum.Id}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}:motion:",
+                        "Cover", EmojiProperties.Standard("🖼️"), ButtonStyle.Secondary)));
                 response.CommandResponse = CommandResponse.NotFound;
                 return response;
             }
@@ -1691,34 +1666,16 @@ public class AlbumBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var pages = new List<PageBuilder>();
+        var requesterTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        string userTitle;
-        string authorName;
-        if (!userSettings.DifferentUser)
-        {
-            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-            authorName = context.Localize("album.topAlbumsTitleSelf",
-                ("period", context.Localizer.PeriodLabel(timeSettings)),
-                ("user", userTitle));
-        }
-        else
-        {
-            var requesterTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-            userTitle = context.Localize("shared.requestedByTitle",
+        var userTitle = !userSettings.DifferentUser
+            ? requesterTitle
+            : context.Localize("shared.requestedByTitle",
                 ("user", userSettings.UserNameLastFm),
                 ("requester", requesterTitle));
-            authorName = context.Localize("album.topAlbumsTitleOther",
-                ("period", context.Localizer.PeriodLabel(timeSettings)),
-                ("user", userSettings.UserNameLastFm),
-                ("requester", requesterTitle));
-        }
 
         var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
             $"/library/albums?{timeSettings.UrlParameter}");
-
-        response.EmbedAuthor.WithName(authorName);
-        response.EmbedAuthor.WithUrl(userUrl);
 
         var amount = topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue || topListSettings.FilterSingles
             ? 1000
@@ -1729,18 +1686,18 @@ public class AlbumBuilders
 
         if (!albums.Success || albums.Content == null)
         {
-            response.Embed.ErrorResponse(albums.Error, albums.Message, "top albums", context.Localizer, context.DiscordUser);
+            response.ComponentsContainer.ErrorResponse(albums.Error, albums.Message, "top albums", context.Localizer, context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
-            response.ResponseType = ResponseType.Embed;
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
         if (albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
         {
-            response.Embed.WithDescription(context.Localize("album.topAlbumsNoResults", ("url", userUrl)));
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(context.Localize("album.topAlbumsNoResults", ("url", userUrl)));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
-            response.ResponseType = ResponseType.Embed;
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
@@ -1831,14 +1788,34 @@ public class AlbumBuilders
             }
         }
 
+        var listTitle = !userSettings.DifferentUser
+            ? context.Localize("album.topAlbumsTitleSelf",
+                ("period", context.Localizer.PeriodLabel(timeSettings)),
+                ("user", await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser, userUrl)))
+            : context.Localize("album.topAlbumsTitleOther",
+                ("period", context.Localizer.PeriodLabel(timeSettings)),
+                ("user", StringExtensions.MarkdownLink(userSettings.UserNameLastFm, userUrl)),
+                ("requester", StringExtensions.Sanitize(requesterTitle)));
+
+        var importDescription = new StringBuilder();
+        ImportService.AddImportDescription(importDescription, albums.PlaySources);
+
         var albumPages = albums.Content.TopAlbums.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
         var rnd = new Random().Next(0, 4);
+        var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
 
         foreach (var albumPage in albumPages)
         {
+            var tooMuchChars = albumPage
+                .Select(s => context.ContextUser.RymEnabled == true
+                    ? StringExtensions.GetRymUrl(s.AlbumName, s.ArtistName)
+                    : s.AlbumUrl)
+                .Sum(s => s?.Length) > 2700;
+
             var albumPageString = new StringBuilder();
             foreach (var album in albumPage)
             {
@@ -1849,8 +1826,12 @@ public class AlbumBuilders
                     url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
                 }
 
+                var albumName = tooMuchChars
+                    ? StringExtensions.Sanitize(album.AlbumName)
+                    : StringExtensions.MarkdownLink(album.AlbumName, url);
+
                 var name =
-                    $"**{album.ArtistName}** - **{StringExtensions.MarkdownLink(album.AlbumName, url)}** - *{context.LocalizeCount("shared.plays", album.UserPlaycount.GetValueOrDefault())}*";
+                    $"**{album.ArtistName}** - **{albumName}** - *{context.LocalizeCount("shared.plays", album.UserPlaycount.GetValueOrDefault())}*";
 
                 if (topListSettings.Billboard && previousTopAlbums.Any())
                 {
@@ -1873,70 +1854,66 @@ public class AlbumBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddImportDescription(footer, albums.PlaySources);
+            if (importDescription.Length > 0)
+            {
+                footer.AppendLine($"-# {importDescription.ToString().TrimEnd()}");
+            }
 
             if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
             {
-                footer.Append(context.LocalizeCount("album.topAlbumsPageCounterTotal",
+                footer.AppendLine($"-# {context.LocalizeCount("album.topAlbumsPageCounterTotal",
                     albums.Content.TotalAmount.Value,
                     ("page", pageCounter.ToString()),
-                    ("pages", albumPages.Count.ToString())));
+                    ("pages", albumPages.Count.ToString()))}");
             }
             else
             {
-                footer.Append(context.Localize("shared.pageCounter",
+                footer.AppendLine($"-# {context.Localize("shared.pageCounter",
                     ("page", pageCounter.ToString()),
-                    ("pages", albumPages.Count.ToString())));
+                    ("pages", albumPages.Count.ToString()))}");
             }
 
             if (topListSettings.Billboard)
             {
-                footer.AppendLine();
-                footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+                footer.AppendLine($"-# {StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm)}");
             }
 
             if (topListSettings.ReleaseYearFilter.HasValue)
             {
-                footer.AppendLine();
-                footer.Append(context.Localize("album.topAlbumsFilterYear",
-                    ("year", topListSettings.ReleaseYearFilter.Value.ToString())));
+                footer.AppendLine($"-# {context.Localize("album.topAlbumsFilterYear",
+                    ("year", topListSettings.ReleaseYearFilter.Value.ToString()))}");
             }
 
             if (topListSettings.ReleaseDecadeFilter.HasValue)
             {
-                footer.AppendLine();
-                footer.Append(context.Localize("album.topAlbumsFilterDecade",
-                    ("decade", topListSettings.ReleaseDecadeFilter.Value.ToString())));
+                footer.AppendLine($"-# {context.Localize("album.topAlbumsFilterDecade",
+                    ("decade", topListSettings.ReleaseDecadeFilter.Value.ToString()))}");
             }
 
             if (topListSettings.FilterSingles)
             {
-                footer.AppendLine();
-                footer.Append(context.Localize("album.topAlbumsFilterSingles"));
+                footer.AppendLine($"-# {context.Localize("album.topAlbumsFilterSingles")}");
             }
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
-                footer.AppendLine();
-                footer.Append(context.Localize("shared.billboardHint"));
+                footer.AppendLine($"-# {context.Localize("shared.billboardHint")}");
             }
 
-            pages.Add(new PageBuilder()
-                .WithDescription(albumPageString.ToString())
-                .WithColor(DiscordConstants.LastFmColorRed)
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString()));
+            pageDescriptions.Add(albumPageString.ToString());
+            pageFooters.Add(footer.ToString());
             pageCounter++;
         }
 
-        if (!pages.Any())
+        if (pageDescriptions.Count == 0)
         {
-            pages.Add(new PageBuilder()
-                .WithDescription(context.Localize("album.topAlbumsNoPlays"))
-                .WithAuthor(response.EmbedAuthor));
+            pageDescriptions.Add(context.Localize("album.topAlbumsNoPlays"));
+            pageFooters.Add(null);
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {listTitle}", pageDescriptions, pageFooters,
+                DiscordConstants.LastFmColorRed, context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

@@ -330,22 +330,16 @@ public class CountryBuilders(
             ResponseType = ResponseType.Paginator
         };
 
-        var pages = new List<PageBuilder>();
+        var requesterTitle = await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        var userTitle = await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-
-        if (userSettings.DifferentUser)
-        {
-            userTitle = context.Localize("shared.requestedByTitle",
+        var userTitle = !userSettings.DifferentUser
+            ? requesterTitle
+            : context.Localize("shared.requestedByTitle",
                 ("user", userSettings.UserNameLastFm),
-                ("requester", await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)));
-        }
+                ("requester", requesterTitle));
 
-        response.EmbedAuthor.WithName(context.Localize("country.topCountriesTitle",
-            ("period", context.Localizer.PeriodLabel(timeSettings)),
-            ("user", userTitle)));
-        response.EmbedAuthor.WithUrl(
-            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}");
+        var userUrl =
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}";
 
         Response<TopArtistList> artists;
         var previousTopArtists = new List<TopArtist>();
@@ -357,8 +351,9 @@ public class CountryBuilders(
 
             if (!artists.Success || artists.Content == null)
             {
-                response.Embed.ErrorResponse(artists.Error, artists.Message, "topgenres", context.Localizer, context.DiscordUser);
+                response.ComponentsContainer.ErrorResponse(artists.Error, artists.Message, "topcountries", context.Localizer, context.DiscordUser);
                 response.CommandResponse = CommandResponse.LastFmError;
+                response.ResponseType = ResponseType.ComponentsV2;
                 return response;
             }
         }
@@ -383,10 +378,10 @@ public class CountryBuilders(
 
         if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
         {
-            response.Embed.WithDescription(context.Localize("errors.notEnoughTopArtists"));
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.ComponentsContainer.WithTextDisplay(context.Localize("errors.notEnoughTopArtists"));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
-            response.ResponseType = ResponseType.Embed;
+            response.ResponseType = ResponseType.ComponentsV2;
             return response;
         }
 
@@ -432,11 +427,22 @@ public class CountryBuilders(
             return response;
         }
 
+        var titleUser = !userSettings.DifferentUser
+            ? await userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser, userUrl)
+            : context.Localize("shared.requestedByTitle",
+                ("user", StringExtensions.MarkdownLink(userSettings.UserNameLastFm, userUrl)),
+                ("requester", StringExtensions.Sanitize(requesterTitle)));
+        var title = context.Localize("country.topCountriesTitle",
+            ("period", context.Localizer.PeriodLabel(timeSettings)),
+            ("user", titleUser));
+
         var countryPages = countries.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
         var rnd = new Random().Next(0, 4);
+        var pageDescriptions = new List<string>();
+        var pageFooters = new List<string>();
 
         foreach (var countryPage in countryPages)
         {
@@ -466,31 +472,39 @@ public class CountryBuilders(
             }
 
             var footer = new StringBuilder();
-            footer.AppendLine(context.Localize("country.source"));
-            footer.AppendLine(context.Localize("country.orderedByArtists"));
-            footer.AppendLine(context.LocalizeCount("country.pageCounterCountries", countries.Count,
-                ("page", pageCounter.ToString()), ("pages", countryPages.Count.ToString())));
+            footer.AppendLine($"-# {context.Localize("country.source")}");
+            footer.AppendLine($"-# {context.Localize("country.orderedByArtists")}");
+            footer.AppendLine($"-# {context.LocalizeCount("country.pageCounterCountries", countries.Count,
+                ("page", pageCounter.ToString()), ("pages", countryPages.Count.ToString()))}");
 
             if (topListSettings.Billboard)
             {
-                footer.AppendLine(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+                footer.AppendLine($"-# {StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm)}");
             }
 
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
-                footer.AppendLine(context.Localize("shared.billboardHint"));
+                footer.AppendLine($"-# {context.Localize("shared.billboardHint")}");
             }
 
-            pages.Add(new PageBuilder()
-                .WithDescription(countryPageString.ToString())
-                .WithAuthor(response.EmbedAuthor)
-                .WithColor(DiscordConstants.LastFmColorRed)
-                .WithFooter(footer.ToString()));
+            pageDescriptions.Add(countryPageString.ToString());
+            pageFooters.Add(footer.ToString());
             pageCounter++;
         }
 
-        response.ComponentPaginator = StringService.BuildComponentPaginator(pages, selectMenuBuilder: context.SelectMenu);
+        if (pageDescriptions.Count == 0)
+        {
+            response.ComponentsContainer.WithTextDisplay(context.Localize("errors.notEnoughTopArtists"));
+            response.ComponentsContainer.WithAccentColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.ComponentsV2;
+            return response;
+        }
 
+        response.ComponentPaginator =
+            StringService.BuildContainerPaginator($"### {title}", pageDescriptions, pageFooters,
+                DiscordConstants.LastFmColorRed, context.SelectMenu);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 

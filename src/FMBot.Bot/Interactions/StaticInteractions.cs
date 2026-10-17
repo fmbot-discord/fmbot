@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -484,7 +485,8 @@ public class StaticInteractions(
                 await this.Context.UpdateInteractionEmbed(response, interactivity);
             }
 
-            await this.Context.LogCommandUsedAsync(response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService,
+                commandOptions: new Dictionary<string, string> { { "category", categoryId } });
         }
         catch (Exception e)
         {
@@ -500,7 +502,8 @@ public class StaticInteractions(
             var response = staticBuilders.FaqQuestionResponse(categoryId, questionId);
 
             await this.Context.UpdateInteractionEmbed(response, interactivity);
-            await this.Context.LogCommandUsedAsync(response, userService);
+            await this.Context.LogCommandUsedAsync(response, userService,
+                commandOptions: new Dictionary<string, string> { { "category", categoryId }, { "question", questionId } });
         }
         catch (Exception e)
         {

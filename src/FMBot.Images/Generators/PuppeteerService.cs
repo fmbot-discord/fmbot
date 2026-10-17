@@ -1,10 +1,12 @@
 using System.Drawing;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using FMBot.Core.Charts;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.Images.Models;
 using FMBot.Persistence.Domain.Models;
 using Ganss.Xss;
 using PuppeteerSharp;
@@ -124,7 +126,15 @@ public class PuppeteerService : IDisposable
 
         if (crownText != null)
         {
-            extraHeight += 96;
+            extraHeight += 110;
+
+            var crownTextLength = Regex.Replace(crownText, "<.*?>", "").Length;
+            if (crownTextLength > 55)
+            {
+                var lines = crownTextLength / 55;
+
+                extraHeight += lines * 42;
+            }
         }
 
         await page.SetViewportAsync(new ViewPortOptions
@@ -209,7 +219,7 @@ public class PuppeteerService : IDisposable
             var positionCounter = $"{indexNumber}.";
             if (userCrown != null && userCrown.UserId == user.UserId)
             {
-                positionCounter = "👑 ";
+                positionCounter = "👑";
             }
 
             userList.Append(GetWhoKnowsLine(positionCounter,
@@ -318,11 +328,11 @@ public class PuppeteerService : IDisposable
         await using var page = await this._browser.NewPageAsync();
 
         var extraHeight = 0;
-        if (title.Length > 38)
+        if (title.Length > 32)
         {
-            var lines = (int)(title.Length / 38);
+            var lines = (int)(title.Length / 32);
 
-            extraHeight += (lines) * 32;
+            extraHeight += (lines) * 38;
         }
 
         var subNamesEnabled = topListObjects.Any(a => a.SubName != null);
@@ -330,7 +340,8 @@ public class PuppeteerService : IDisposable
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 650,
-            Height = 810 + extraHeight + (subNamesEnabled ? 125 : 0),
+            Height = 756 + extraHeight + (subNamesEnabled ? 125 : 0),
+            DeviceScaleFactor = 2
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "top.html");
@@ -343,7 +354,7 @@ public class PuppeteerService : IDisposable
 
         content = content.Replace("{{name}}", sanitizer.Sanitize(name) + "'s");
         content = content.Replace("{{title}}", sanitizer.Sanitize(title));
-        content = content.Replace("{{time}}", $"{sanitizer.Sanitize(time)} · Playcounts");
+        content = content.Replace("{{time}}", $"{sanitizer.Sanitize(time)} - Plays");
         content = content.Replace("{{type}}", sanitizer.Sanitize(type));
 
         content = content.Replace("{{totalDifferent}}", totalDifferent.Format(numberFormat));
@@ -448,6 +459,82 @@ public class PuppeteerService : IDisposable
                     <div>
                         <div>{name} <span class="float-right" style="padding-top:12px;">{plays.Format(numberFormat)}</span></div>
                         <div class="sub">{sub}</div>
+                    </div>
+                </li>
+                """;
+    }
+
+    public async Task<SKBitmap> GetRecap(RecapCard card)
+    {
+        await this._initializationTask;
+
+        await using var page = await this._browser.NewPageAsync();
+
+        await page.SetViewportAsync(new ViewPortOptions
+        {
+            Width = 800,
+            Height = 600,
+            DeviceScaleFactor = 1.5
+        });
+
+        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "recap.html");
+        var content = await File.ReadAllTextAsync(localPath);
+
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.AllowedTags.Clear();
+        sanitizer.AllowedAttributes.Clear();
+
+        var stats = new StringBuilder();
+        foreach (var stat in card.Stats)
+        {
+            stats.Append($"""
+                          <div>
+                              <div class="stat-num">{sanitizer.Sanitize(stat.Number)}</div>
+                              <div class="label muted">{sanitizer.Sanitize(stat.Label)}</div>
+                          </div>
+                          """);
+        }
+
+        var values = new Dictionary<string, string>
+        {
+            ["title"] = sanitizer.Sanitize(card.Title),
+            ["photo-url"] = WebUtility.HtmlEncode(card.PhotoUrl ?? ""),
+            ["photo-class"] = card.PhotoUrl == null ? "no-photo" : "",
+            ["top-artist-label"] = sanitizer.Sanitize(card.TopArtistLabel),
+            ["top-artist-name"] = sanitizer.Sanitize(card.TopArtistName),
+            ["top-artist-line"] = sanitizer.Sanitize(card.TopArtistLine),
+            ["stats"] = stats.ToString(),
+            ["stats-class"] = card.Stats.Any(a => a.Number.Length > 7) ? "compact" : "",
+            ["top-artists-label"] = sanitizer.Sanitize(card.TopArtistsLabel),
+            ["artists"] = string.Concat(card.Artists.Select(s =>
+                GetRecapLine(s, "round", "https://fm.bot/img/bot/unknown-artist.png", sanitizer))),
+            ["top-tracks-label"] = sanitizer.Sanitize(card.TopTracksLabel),
+            ["tracks"] = string.Concat(card.Tracks.Select(s =>
+                GetRecapLine(s, "square", "https://fm.bot/img/bot/unknown.png", sanitizer))),
+            ["genres"] = sanitizer.Sanitize(string.Join(" - ", card.Genres)),
+            ["genres-class"] = card.Genres.Count == 0 ? "hidden" : ""
+        };
+
+        content = Regex.Replace(content, @"\{\{([a-z-]+)\}\}", m => values.GetValueOrDefault(m.Groups[1].Value, ""));
+
+        await page.SetJavaScriptEnabledAsync(false);
+        await page.SetContentAsync(content);
+        await page.WaitForSelectorAsync(".main");
+
+        var img = await page.ScreenshotDataAsync(new ScreenshotOptions { FullPage = true });
+        using var skImage = SKImage.FromEncodedData(img);
+        return SKBitmap.FromImage(skImage);
+    }
+
+    private static string GetRecapLine(RecapCardItem item, string shape, string placeholderUrl,
+        HtmlSanitizer sanitizer)
+    {
+        return $"""
+                <li>
+                    <img class="thumb {shape}" src="{WebUtility.HtmlEncode(item.ImageUrl ?? placeholderUrl)}">
+                    <div>
+                        <div class="item-name ellipsis">{sanitizer.Sanitize(item.Name)}</div>
+                        <div class="item-sub muted ellipsis">{sanitizer.Sanitize(item.Subtitle)}</div>
                     </div>
                 </li>
                 """;

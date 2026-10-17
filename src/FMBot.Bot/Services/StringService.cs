@@ -468,6 +468,52 @@ public static class StringService
         return builder;
     }
 
+    public static ComponentPaginatorBuilder BuildContainerPaginator(string title,
+        IReadOnlyList<string> pageDescriptions, IReadOnlyList<string> pageFooters,
+        Color? accentColor = null, MenuProperties menu = null)
+    {
+        return new ComponentPaginatorBuilder()
+            .WithPageFactory(p =>
+            {
+                var container = new ComponentContainerProperties();
+
+                container.WithAccentColor(accentColor);
+                container.WithTextDisplay(title);
+                container.WithSeparator();
+
+                var pageDescription = pageDescriptions.ElementAtOrDefault(p.CurrentPageIndex);
+                if (!string.IsNullOrWhiteSpace(pageDescription))
+                {
+                    container.WithTextDisplay(pageDescription.TrimEnd());
+                }
+
+                var pageFooter = pageFooters.ElementAtOrDefault(p.CurrentPageIndex);
+                if (pageFooter != null)
+                {
+                    container.WithSeparator();
+                    container.WithTextDisplay(pageFooter.TrimEnd());
+                }
+
+                if (pageDescriptions.Count > 1)
+                {
+                    container.WithActionRow(GetPaginationActionRow(p));
+                }
+
+                if (menu != null)
+                {
+                    container.AddComponent(menu);
+                }
+
+                return new PageBuilder()
+                    .WithAllowedMentions(AllowedMentionsProperties.None)
+                    .WithMessageFlags(MessageFlags.IsComponentsV2)
+                    .WithComponents([container])
+                    .Build();
+            })
+            .WithPageCount(Math.Max(1, pageDescriptions.Count))
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+    }
+
     public static ComponentPaginatorBuilder BuildComponentPaginatorWithSelectMenu(IList<PageBuilder> pages,
         StringMenuProperties selectMenuBuilder, string customOptionId = null, EmojiProperties optionEmote = null)
     {

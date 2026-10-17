@@ -452,7 +452,7 @@ public class FriendBuilders
                         ("max", Constants.MaxFriends.ToString()),
                         ("supporterMax", Constants.MaxFriendsSupporter.ToString()))));
                 response.ComponentsContainer.AddComponent(new ActionRowProperties().WithButton(
-                    context.Localize("buttons.getSupporter"),
+                    context.Localize("buttons.getFmbotSupporter"),
                     style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit")));
             }

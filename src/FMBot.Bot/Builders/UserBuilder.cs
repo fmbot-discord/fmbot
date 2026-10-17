@@ -1819,7 +1819,7 @@ public class UserBuilder
                 container.WithSeparator();
                 container.AddComponents(new ComponentSectionProperties(new ButtonProperties(
                     InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge-dailylimit"),
-                    context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
+                    context.Localize("buttons.getFmbotSupporter"), ButtonStyle.Primary))
                 {
                     Components =
                     [

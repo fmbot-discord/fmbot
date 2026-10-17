@@ -742,6 +742,156 @@ public class ImportBuilders
         return response;
     }
 
+    public async Task<ResponseModel> ImportDebug(ContextModel context, UserSettingsModel userSettings,
+        DataSource dataSource)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var storedPlaysTask = this._playService.GetAllUserPlays(userSettings.UserId, false);
+        var usedPlaysTask = this._playService.GetAllUserPlays(userSettings.UserId);
+        var storedPlays = await storedPlaysTask;
+        var usedPlays = await usedPlaysTask;
+
+        var firstScrobble = storedPlays
+            .Where(w => w.PlaySource == PlaySource.LastFm)
+            .MinBy(o => o.TimePlayed);
+
+        var artistName = string.IsNullOrWhiteSpace(userSettings.NewSearchValue) ? null : userSettings.NewSearchValue;
+        if (artistName != null)
+        {
+            storedPlays = storedPlays
+                .Where(w => string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            usedPlays = usedPlays
+                .Where(w => string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        var storedImports = storedPlays.Where(w => w.PlaySource != PlaySource.LastFm).ToList();
+        var usedImports = usedPlays.Where(w => w.PlaySource != PlaySource.LastFm).ToList();
+        var storedScrobbles = storedPlays.Where(w => w.PlaySource == PlaySource.LastFm).ToList();
+        var usedScrobbles = usedPlays.Where(w => w.PlaySource == PlaySource.LastFm).ToList();
+        var numberFormat = context.NumberFormat;
+
+        var container = response.ComponentsContainer;
+        container.WithAccentColor(DiscordConstants.InformationColorBlue);
+
+        var header = new StringBuilder();
+        header.AppendLine(
+            $"### Import debug for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}");
+        header.AppendLine($"Mode: **{dataSource.GetAttribute<OptionAttribute>().Name}**");
+        if (artistName != null)
+        {
+            header.AppendLine($"Filtering to artist `{artistName}`");
+        }
+
+        container.WithTextDisplay(header.ToString());
+        container.WithSeparator();
+
+        var imports = new StringBuilder();
+        imports.AppendLine("**Imports**");
+        imports.AppendLine($"Stored: {PlayCountWithRange(storedImports, numberFormat)}");
+        imports.AppendLine($"Used: {PlayCountWithRange(usedImports, numberFormat)}");
+        if (storedImports.Count > 0)
+        {
+            imports.AppendLine($"Stored by source: {ImportSourceCounts(storedImports, numberFormat)}");
+        }
+
+        var importsWithoutArtist = storedImports.Count(c => c.ArtistName == null);
+        if (importsWithoutArtist > 0)
+        {
+            imports.AppendLine($"Without artist name, never used: `{importsWithoutArtist.Format(numberFormat)}`");
+        }
+
+        container.WithTextDisplay(imports.ToString());
+
+        container.WithTextDisplay("**Last.fm**\n" +
+                                  $"Stored: {PlayCountWithRange(storedScrobbles, numberFormat)}\n" +
+                                  $"Used: {PlayCountWithRange(usedScrobbles, numberFormat)}");
+
+        if (dataSource == DataSource.MergedDeduplicated && storedImports.Count > 0)
+        {
+            var usedImportIds = usedImports.Select(s => s.UserPlayId).ToHashSet();
+            var removedImports = storedImports
+                .Where(w => w.ArtistName != null && !usedImportIds.Contains(w.UserPlayId))
+                .ToList();
+            var keptBeforeFirstScrobble = usedImports
+                .Count(c => firstScrobble == null || c.TimePlayed < firstScrobble.TimePlayed);
+
+            var smart = new StringBuilder();
+            smart.AppendLine("**Smart deduplication**");
+            smart.AppendLine($"Duplicates removed: `{removedImports.Count.Format(numberFormat)}`");
+            if (removedImports.Count > 0)
+            {
+                smart.AppendLine($"Removed by source: {ImportSourceCounts(removedImports, numberFormat)}");
+            }
+
+            smart.AppendLine($"Kept before first scrobble: `{keptBeforeFirstScrobble.Format(numberFormat)}`");
+            smart.AppendLine(
+                $"Kept alongside Last.fm: `{(usedImports.Count - keptBeforeFirstScrobble).Format(numberFormat)}`");
+
+            if (firstScrobble != null)
+            {
+                smart.AppendLine(
+                    $"First scrobble: <t:{((DateTimeOffset)firstScrobble.TimePlayed).ToUnixTimeSeconds()}:f>");
+            }
+
+            smart.AppendLine("Matching window: same artist and track scrobbled within 2 hours");
+
+            container.WithSeparator();
+            container.WithTextDisplay(smart.ToString());
+        }
+
+        container.WithSeparator();
+        container.WithTextDisplay($"**Final**\nPlays: {PlayCountWithRange(usedPlays, numberFormat)}");
+
+        var importGraph = this._graphService.BuildImportGraph(context, response, usedPlays, dataSource,
+            "import-debug.png");
+        if (importGraph != null)
+        {
+            container.WithSeparator();
+            container.AddComponent(importGraph);
+        }
+
+        return response;
+    }
+
+    private static string PlayCountWithRange(ICollection<UserPlay> plays, NumberFormat numberFormat)
+    {
+        var count = $"`{plays.Count.Format(numberFormat)}`";
+        if (plays.Count == 0)
+        {
+            return count;
+        }
+
+        var first = ((DateTimeOffset)plays.MinBy(o => o.TimePlayed).TimePlayed).ToUnixTimeSeconds();
+        var last = ((DateTimeOffset)plays.MaxBy(o => o.TimePlayed).TimePlayed).ToUnixTimeSeconds();
+
+        return $"{count} · <t:{first}:f> to <t:{last}:f>";
+    }
+
+    private static string ImportSourceCounts(ICollection<UserPlay> imports, NumberFormat numberFormat)
+    {
+        var sources = new List<string>();
+
+        var spotify = imports.Count(c => c.PlaySource == PlaySource.SpotifyImport);
+        if (spotify > 0)
+        {
+            sources.Add($"Spotify `{spotify.Format(numberFormat)}`");
+        }
+
+        var appleMusic = imports.Count(c => c.PlaySource == PlaySource.AppleMusicImport);
+        if (appleMusic > 0)
+        {
+            sources.Add($"Apple Music `{appleMusic.Format(numberFormat)}`");
+        }
+
+        return string.Join(" · ", sources);
+    }
+
     private static void AddImportPickCounts(ComponentContainerProperties container, NumberFormat numberFormat,
         ICollection<UserPlay> allPlays,
         ICollection<UserPlay> processedPlays)

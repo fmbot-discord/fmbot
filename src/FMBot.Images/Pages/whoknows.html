@@ -7,17 +7,34 @@
             src: url("https://fm.bot/fonts/worksans-regular.otf") format("opentype");
         }
 
+        @font-face {
+            font-family: "worksans";
+            font-weight: 600;
+            src: url("https://fm.bot/fonts/worksans-semibold.ttf") format("truetype");
+        }
+
         body {
             font-family: "worksans";
             margin-right: 36px;
             margin-left: 36px;
             margin-top: 42px;
-            background-color: #282424;
+            background-color: #202225;
             color: #dcddde;
-            background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.75)), url('{{image-url}}');
+            font-variant-numeric: tabular-nums;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: -128px;
+            right: -128px;
+            bottom: -128px;
+            left: -128px;
+            z-index: -1;
+            background: linear-gradient(0deg, rgba(32, 34, 37, 0.55), rgba(32, 34, 37, 0.55)), url('{{image-url}}');
             background-position: center;
             background-size: cover;
-            background-attachment: fixed;
+            filter: blur(64px);
         }
 
         .float-left {
@@ -38,6 +55,7 @@
 
         .title {
             font-size: 48px;
+            font-weight: 600;
             background-color: #2f3136;
             padding: 30px 12px 30px 12px;
             margin-top: -18px;
@@ -68,7 +86,9 @@
             margin-left: 0;
             margin-right: 0;
             text-align: center;
-            font-size: 24px;
+            font-size: 36px;
+            background: linear-gradient(90deg, rgba(240, 178, 50, 0.04), rgba(240, 178, 50, 0.16) 50%, rgba(240, 178, 50, 0.04)), #2f3136;
+            box-shadow: 0px 0px 24px rgba(240, 178, 50, 0.28), 0px 2px 6px rgba(0, 0, 0, 0.6);
         }
 
         .float-child {
@@ -84,7 +104,13 @@
         }
 
         .stat-view {
-            margin-top: -30px;
+            display: table;
+            margin: -30px auto 0 auto;
+        }
+
+        .stat-view b {
+            font-weight: 400;
+            color: #b9bbbe;
         }
 
         .flex-wrap>* {
@@ -124,12 +150,14 @@
             margin-bottom: 12px;
             overflow: hidden;
             white-space: nowrap;
+            line-height: 42px;
         }
         .num {
             width: 48px;
             display: inline-block;
             text-align: center;
             padding-left: -6px;
+            color: #b9bbbe;
         }
         .num {
             width: {{num-width}}px !important;
@@ -166,18 +194,14 @@
                     {{users}}
                 </ul>
             </div>
-            <div class="whoknows subtitle bottom align-center flex-wrap stat-view">
-                <span class="float-left">{{listeners}} listeners</span>
-                <span><b>·</b></span>
-                <span class="float-right">{{plays}} plays</span>
-                <span><b>·</b></span>
-                <span>{{average}} avg</span>
+            <div class="whoknows subtitle stat-view">
+                {{listeners}} listeners <b>-</b> {{plays}} plays <b>-</b> {{average}} avg
             </div>
         </div>
     </div>
 
     <div class="subtitle bottom align-center flex-wrap crown-view {{crown-hide}}">
-        <span>{{crown-text}}</span>
+        <span>👑 {{crown-text}}</span>
     </div>
 </body>
 

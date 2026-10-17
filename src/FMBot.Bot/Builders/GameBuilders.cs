@@ -274,23 +274,30 @@ public class GameBuilders
     {
         response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        var limitDescription = new StringBuilder();
-        limitDescription.AppendLine(limitReachedText);
-
-        var limitButtons = new ActionRowProperties()
-            .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source));
+        response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+            InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
+            context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
+        {
+            Components =
+            [
+                new TextDisplayProperties(limitReachedText)
+            ]
+        });
 
         if (!premiumGuild)
         {
-            limitDescription.AppendLine(context.Localize("jumble.premiumServerUpsell",
-                ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))));
-            limitButtons.WithButton(context.Localize("buttons.premiumServer"), style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.PremiumServer.GetOverview}:{source}");
+            response.ComponentsContainer.WithSeparator();
+            response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
+                $"{InteractionConstants.PremiumServer.GetOverview}:{source}",
+                context.Localize("buttons.premiumServer"), ButtonStyle.Secondary))
+            {
+                Components =
+                [
+                    new TextDisplayProperties(context.Localize("jumble.premiumServerUpsell",
+                        ("premiumLimit", Constants.PremiumServerJumbleDailyLimit.Format(context.NumberFormat))))
+                ]
+            });
         }
-
-        response.ComponentsContainer.WithTextDisplay(limitDescription.ToString().TrimEnd());
-        response.ComponentsContainer.WithActionRow(limitButtons);
     }
 
     private static void BuildJumbleContainer(ResponseModel response, string jumbledArtist, List<JumbleSessionHint> hints,
@@ -378,8 +385,6 @@ public class GameBuilders
             ? await BuildGuildStatsPage(context, jumbleType, name)
             : await BuildUserStatsPage(context, userSettings, jumbleType, timeSettings, name);
 
-        response.Embed = BuildStatsEmbed(page);
-
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
         container.WithTextDisplay($"### {page.Title}");
@@ -395,7 +400,7 @@ public class GameBuilders
             container.WithTextDisplay($"**{title}**\n{body.TrimEnd()}");
         }
 
-        if (context.DiscordGuild != null)
+        if (context.DiscordGuild != null && context.SelectMenu == null)
         {
             container.WithSeparator();
             container.WithActionRow(BuildStatsTabs(context, userSettings, jumbleType, view));
@@ -516,25 +521,6 @@ public class GameBuilders
         JumbleStatsView view)
     {
         return $"{InteractionConstants.Game.JumbleStats}:{jumbleType}:{view}:{userSettings.DiscordUserId}:{context.ContextUser.DiscordUserId}";
-    }
-
-    private static EmbedProperties BuildStatsEmbed(JumbleStatsPage page)
-    {
-        var embed = new EmbedProperties();
-        embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithAuthor(page.Title);
-
-        if (page.Description != null)
-        {
-            embed.WithDescription(page.Description);
-        }
-
-        foreach (var (title, body) in page.Sections)
-        {
-            embed.AddField(title, body);
-        }
-
-        return embed;
     }
 
     private sealed class JumbleStatsPage

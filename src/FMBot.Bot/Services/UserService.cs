@@ -1116,6 +1116,14 @@ public class UserService
         return title;
     }
 
+    public async Task<string> GetUserTitleAsync(NetCord.Gateway.Guild guild, NetCord.User user, string url)
+    {
+        var name = await GetNameAsync(guild, user);
+        var userType = await GetRankAsync(user);
+
+        return $"{DiscordStringExtensions.MarkdownLink(name, url)}{userType.UserTypeToIcon()}";
+    }
+
     public async Task<StringBuilder> GetFooterAsync(
         FmFooterOption footerOptions,
         UserSettingsModel userSettings,
