@@ -447,6 +447,9 @@
         "private": {
           "description": "Only show response to you"
         },
+        "redirects": {
+          "description": "Toggle Last.fm track name redirects (defaults to enabled)"
+        },
         "track": {
           "description": "The track you want to search for (defaults to currently playing)"
         }
@@ -544,6 +547,9 @@
         },
         "mode": {
           "description": "The type of response you want - change default with /mode"
+        },
+        "redirects": {
+          "description": "Toggle Last.fm track name redirects (defaults to enabled)"
         },
         "track": {
           "description": "The track you want to search for (defaults to currently playing)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Shows track info for the track you're currently listening to or searching for",
       "parameters": {
+        "redirects": {
+          "description": "Toggle Last.fm track name redirects (defaults to enabled)"
+        },
         "track": {
           "description": "The track you want to search for (defaults to currently playing)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Shows playcount for current track or the one you're searching for",
       "parameters": {
+        "redirects": {
+          "description": "Toggle Last.fm track name redirects (defaults to enabled)"
+        },
         "time-period": {
           "description": "Time period to show plays for"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Disable server filters"
+        },
+        "redirects": {
+          "description": "Toggle Last.fm track name redirects (defaults to enabled)"
         },
         "role-picker": {
           "description": "Display a rolepicker to filter with roles"

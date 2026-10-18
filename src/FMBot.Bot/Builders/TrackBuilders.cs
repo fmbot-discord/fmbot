@@ -117,7 +117,8 @@ public class TrackBuilders
 
     public async Task<ResponseModel> TrackAsync(
         ContextModel context,
-        string searchValue)
+        string searchValue,
+        bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -127,7 +128,8 @@ public class TrackBuilders
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id,
+            redirectsEnabled: redirectsEnabled);
 
         if (trackSearch.Track == null)
         {
@@ -568,6 +570,7 @@ public class TrackBuilders
         string trackValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null,
+        bool redirectsEnabled = true,
         bool filterDisabled = false)
     {
         var response = new ResponseModel
@@ -581,7 +584,8 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id,
+            redirectsEnabled: redirectsEnabled);
         if (track.Track == null)
         {
             return track.Response;
@@ -722,9 +726,11 @@ public class TrackBuilders
 
         response.Embed.WithTitle(title);
 
-        if (track.Track.TrackUrl != null)
+        var trackUrl = track.Track.TrackUrl ??
+                       LastfmUrlExtensions.GetTrackUrl(track.Track.ArtistName, track.Track.TrackName);
+        if (trackUrl != null)
         {
-            response.Embed.WithUrl(track.Track.TrackUrl);
+            response.Embed.WithUrl(trackUrl);
         }
 
         response.EmbedFooter.WithText(footer.ToString());
@@ -753,7 +759,8 @@ public class TrackBuilders
     public async Task<ResponseModel> FriendsWhoKnowTrackAsync(
         ContextModel context,
         WhoKnowsResponseMode mode,
-        string trackValues)
+        string trackValues,
+        bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -774,7 +781,8 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id,
+            redirectsEnabled: redirectsEnabled);
         if (track.Track == null)
         {
             return track.Response;
@@ -864,9 +872,11 @@ public class TrackBuilders
 
         response.Embed.WithTitle(title);
 
-        if (Uri.IsWellFormedUriString(track.Track.TrackUrl, UriKind.Absolute))
+        var trackUrl = track.Track.TrackUrl ??
+                       LastfmUrlExtensions.GetTrackUrl(track.Track.ArtistName, track.Track.TrackName);
+        if (Uri.IsWellFormedUriString(trackUrl, UriKind.Absolute))
         {
-            response.Embed.WithUrl(track.Track.TrackUrl);
+            response.Embed.WithUrl(trackUrl);
         }
 
         response.EmbedFooter.WithText(footer);
@@ -888,7 +898,8 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, context.Localizer, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId, interactionId: context.InteractionId,
-            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+            referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id,
+            redirectsEnabled: settings.RedirectsEnabled);
         if (track.Track == null)
         {
             return track.Response;
@@ -1018,9 +1029,11 @@ public class TrackBuilders
 
         response.Embed.WithTitle(title);
 
-        if (!string.IsNullOrWhiteSpace(track.Track.TrackUrl))
+        var trackUrl = track.Track.TrackUrl ??
+                       LastfmUrlExtensions.GetTrackUrl(track.Track.ArtistName, track.Track.TrackName);
+        if (!string.IsNullOrWhiteSpace(trackUrl))
         {
-            response.Embed.WithUrl(track.Track.TrackUrl);
+            response.Embed.WithUrl(trackUrl);
         }
 
         response.EmbedFooter.WithText(footer.ToString());
@@ -1068,6 +1081,7 @@ public class TrackBuilders
         ContextModel context,
         UserSettingsModel userSettings,
         string searchValue,
+        bool redirectsEnabled,
         TimeSettingsModel timeSettings = null,
         string searchValueWithoutPeriod = null)
     {
@@ -1081,7 +1095,8 @@ public class TrackBuilders
                 context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
                 otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
                 interactionId: context.InteractionId,
-                referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id);
+                referencedMessage: context.ReferencedMessage, discordGuildId: context.DiscordGuild?.Id,
+                redirectsEnabled: redirectsEnabled);
 
         var trackSearch = await SearchTrack(response, searchValue);
         if (searchValueWithoutPeriod != null)

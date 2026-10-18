@@ -472,6 +472,9 @@
         "private": {
           "description": "Yanıtı yalnızca sana göster"
         },
+        "redirects": {
+          "description": "Last.fm parça adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
         "track": {
           "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "İstediğin yanıt türü - varsayılanı /mode ile değiştir"
+        },
+        "redirects": {
+          "description": "Last.fm parça adı yönlendirmelerini aç/kapat (varsayılan: açık)"
         },
         "track": {
           "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Şu an dinlediğin veya aradığın parçanın bilgilerini gösterir",
       "parameters": {
+        "redirects": {
+          "description": "Last.fm parça adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
         "track": {
           "description": "Aramak istediğin parça (varsayılan: şu an çalan)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Mevcut parçanın veya aradığın parçanın play sayısını gösterir",
       "parameters": {
+        "redirects": {
+          "description": "Last.fm parça adı yönlendirmelerini aç/kapat (varsayılan: açık)"
+        },
         "time-period": {
           "description": "Play'lerin gösterileceği zaman aralığı"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Sunucu filtrelerini devre dışı bırak"
+        },
+        "redirects": {
+          "description": "Last.fm parça adı yönlendirmelerini aç/kapat (varsayılan: açık)"
         },
         "role-picker": {
           "description": "Rollerle filtrelemek için rol seçici göster"

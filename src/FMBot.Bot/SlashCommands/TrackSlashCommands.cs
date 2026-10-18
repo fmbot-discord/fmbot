@@ -36,7 +36,9 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "track",
             Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
-        string name = null)
+        string name = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm track name redirects (defaults to enabled)")]
+        bool redirectsEnabled = true)
     {
         this.Context.DeferInBackground();
 
@@ -44,7 +46,8 @@ public class TrackSlashCommands(
 
         try
         {
-            var response = await trackBuilders.TrackAsync(new ContextModel(this.Context, contextUser), name);
+            var response = await trackBuilders.TrackAsync(new ContextModel(this.Context, contextUser), name,
+                redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -69,6 +72,8 @@ public class TrackSlashCommands(
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "role-picker", Description = "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm track name redirects (defaults to enabled)")]
+        bool redirectsEnabled = true,
         [SlashCommandParameter(Name = "no-filter", Description = "Disable server filters")]
         bool filterDisabled = false)
     {
@@ -91,7 +96,7 @@ public class TrackSlashCommands(
         {
             var response =
                 await trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode.Value,
-                    name, displayRoleFilter, filterDisabled: filterDisabled);
+                    name, displayRoleFilter, redirectsEnabled: redirectsEnabled, filterDisabled: filterDisabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -116,7 +121,9 @@ public class TrackSlashCommands(
             Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
-        bool privateResponse = false)
+        bool privateResponse = false,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm track name redirects (defaults to enabled)")]
+        bool redirectsEnabled = true)
     {
         this.Context.DeferInBackground(privateResponse ? MessageFlags.Ephemeral : default);
 
@@ -128,7 +135,7 @@ public class TrackSlashCommands(
         {
             var response =
                 await trackBuilders.FriendsWhoKnowTrackAsync(new ContextModel(this.Context, contextUser),
-                    mode.Value, name);
+                    mode.Value, name, redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService, privateResponse);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -153,7 +160,9 @@ public class TrackSlashCommands(
             Description = "The type of response you want - change default with /mode")]
         WhoKnowsResponseMode? mode = null,
         [SlashCommandParameter(Name = "hide-private", Description = "Hide or show private users")]
-        bool hidePrivate = false)
+        bool hidePrivate = false,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm track name redirects (defaults to enabled)")]
+        bool redirectsEnabled = true)
     {
         this.Context.DeferInBackground();
 
@@ -165,7 +174,8 @@ public class TrackSlashCommands(
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            ResponseMode = mode ?? contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default
+            ResponseMode = mode ?? contextUser.WhoKnowsMode ?? WhoKnowsResponseMode.Default,
+            RedirectsEnabled = redirectsEnabled
         };
 
         try
@@ -196,6 +206,8 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period to show plays for",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
+        [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm track name redirects (defaults to enabled)")]
+        bool redirectsEnabled = true,
         [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
         string user = null)
     {
@@ -211,7 +223,8 @@ public class TrackSlashCommands(
                 LocalizationService.GetLanguage(this.Context.Interaction.GuildId, this.Context.Interaction.GuildLocale)).TimeSettings;
 
             var response =
-                await trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name, timeSettings);
+                await trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name,
+                    redirectsEnabled, timeSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

@@ -472,6 +472,9 @@
         "private": {
           "description": "Visa svaret endast för dig"
         },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av låtnamn (standard: på)"
+        },
         "track": {
           "description": "Låten du vill söka efter (standard: det som spelas nu)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Typen av svar du vill ha - ändra standard med /mode"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av låtnamn (standard: på)"
         },
         "track": {
           "description": "Låten du vill söka efter (standard: det som spelas nu)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Visar låtinfo för låten du lyssnar på eller söker efter",
       "parameters": {
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av låtnamn (standard: på)"
+        },
         "track": {
           "description": "Låten du vill söka efter (standard: det som spelas nu)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Visar playcount för nuvarande låt eller den du söker efter",
       "parameters": {
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av låtnamn (standard: på)"
+        },
         "time-period": {
           "description": "Tidsperiod att visa plays för"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Inaktivera serverfilter"
+        },
+        "redirects": {
+          "description": "Slå av/på Last.fm-omdirigering av låtnamn (standard: på)"
         },
         "role-picker": {
           "description": "Visa en rollväljare för att filtrera med roller"

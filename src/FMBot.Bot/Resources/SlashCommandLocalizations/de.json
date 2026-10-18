@@ -472,6 +472,9 @@
         "private": {
           "description": "Antwort nur dir anzeigen"
         },
+        "redirects": {
+          "description": "Last.fm-Weiterleitungen für Tracknamen umschalten (Standard: aktiviert)"
+        },
         "track": {
           "description": "Der Track, den du suchst (Standard: was gerade läuft)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Gewünschter Antworttyp - Standard änderbar mit /mode"
+        },
+        "redirects": {
+          "description": "Last.fm-Weiterleitungen für Tracknamen umschalten (Standard: aktiviert)"
         },
         "track": {
           "description": "Der Track, den du suchst (Standard: was gerade läuft)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Zeigt Track-Infos für den Track, den du gerade hörst oder suchst",
       "parameters": {
+        "redirects": {
+          "description": "Last.fm-Weiterleitungen für Tracknamen umschalten (Standard: aktiviert)"
+        },
         "track": {
           "description": "Der Track, den du suchst (Standard: was gerade läuft)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Zeigt den Playcount für den aktuellen oder gesuchten Track",
       "parameters": {
+        "redirects": {
+          "description": "Last.fm-Weiterleitungen für Tracknamen umschalten (Standard: aktiviert)"
+        },
         "time-period": {
           "description": "Zeitraum, für den Plays angezeigt werden"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Serverfilter deaktivieren"
+        },
+        "redirects": {
+          "description": "Last.fm-Weiterleitungen für Tracknamen umschalten (Standard: aktiviert)"
         },
         "role-picker": {
           "description": "Rollenauswahl zum Filtern nach Rollen anzeigen"

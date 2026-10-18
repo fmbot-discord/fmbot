@@ -472,6 +472,9 @@
         "private": {
           "description": "Toon de reactie alleen aan jou"
         },
+        "redirects": {
+          "description": "Schakel Last.fm-tracknaamredirects in of uit (standaard aan)"
+        },
         "track": {
           "description": "De track die je zoekt (standaard wat je nu speelt)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Het type reactie dat je wilt - wijzig de standaard met /mode"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-tracknaamredirects in of uit (standaard aan)"
         },
         "track": {
           "description": "De track die je zoekt (standaard wat je nu speelt)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Toont trackinfo voor de track waar je nu naar luistert of die je zoekt",
       "parameters": {
+        "redirects": {
+          "description": "Schakel Last.fm-tracknaamredirects in of uit (standaard aan)"
+        },
         "track": {
           "description": "De track die je zoekt (standaard wat je nu speelt)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Toont het aantal plays voor de huidige track of de track die je zoekt",
       "parameters": {
+        "redirects": {
+          "description": "Schakel Last.fm-tracknaamredirects in of uit (standaard aan)"
+        },
         "time-period": {
           "description": "Periode om plays voor te tonen"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Schakel serverfilters uit"
+        },
+        "redirects": {
+          "description": "Schakel Last.fm-tracknaamredirects in of uit (standaard aan)"
         },
         "role-picker": {
           "description": "Toon een rollenkiezer om op rollen te filteren"

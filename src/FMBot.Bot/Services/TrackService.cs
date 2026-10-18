@@ -114,7 +114,7 @@ public class TrackService
     public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, Localizer localizer,
         string trackValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
         bool useCachedTracks = false, int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null,
-        ulong? discordGuildId = null)
+        ulong? discordGuildId = null, bool redirectsEnabled = true)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(trackValues))
@@ -189,12 +189,13 @@ public class TrackService
                 Response<TrackInfo> trackInfo;
                 if (useCachedTracks)
                 {
-                    trackInfo = await GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
+                    trackInfo = await GetCachedTrack(trackArtist, trackName, lastFmUserName, userId,
+                        redirectsEnabled);
                 }
                 else
                 {
                     trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, trackArtist,
-                        lastFmUserName);
+                        lastFmUserName, redirectsEnabled);
                 }
 
                 response.ReferencedMusic = new ReferencedMusic
@@ -260,13 +261,13 @@ public class TrackService
             if (useCachedTracks)
             {
                 trackInfo = await GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName,
-                    userId);
+                    userId, redirectsEnabled);
             }
             else
             {
                 trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(lastPlayedTrack.TrackName,
                     lastPlayedTrack.ArtistName,
-                    lastFmUserName);
+                    lastFmUserName, redirectsEnabled);
             }
 
             if (!string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName) &&
@@ -321,13 +322,13 @@ public class TrackService
             if (useCachedTracks)
             {
                 trackInfo = await GetCachedTrack(trackSearch.ArtistName, trackSearch.Name, lastFmUserName,
-                    userId);
+                    userId, redirectsEnabled);
             }
             else
             {
                 trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackSearch.Name,
                     trackSearch.ArtistName,
-                    lastFmUserName);
+                    lastFmUserName, redirectsEnabled);
             }
 
             if (trackInfo?.Content == null || !trackInfo.Success)
@@ -437,7 +438,7 @@ public class TrackService
     }
 
     public async Task<Response<TrackInfo>> GetCachedTrack(string artistName, string trackName, string lastFmUserName,
-        int? userId = null)
+        int? userId = null, bool redirectsEnabled = true)
     {
         Response<TrackInfo> trackInfo;
         var cachedTrack = await GetTrackFromDatabase(artistName, trackName);
@@ -455,7 +456,8 @@ public class TrackService
                     cachedTrack.ArtistName, cachedTrack.Name, userId.Value);
                 if (userPlaycount == 0)
                 {
-                    trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName, lastFmUserName);
+                    trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName, lastFmUserName,
+                        redirectsEnabled);
                 }
                 else
                 {
@@ -469,13 +471,12 @@ public class TrackService
             {
                 trackInfo.Content.AlbumCoverUrl = cachedAlbum.SpotifyImageUrl;
                 trackInfo.Content.AlbumUrl = cachedAlbum.LastFmUrl;
-                trackInfo.Content.TrackUrl = cachedAlbum.LastFmUrl;
             }
         }
         else
         {
             trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName,
-                lastFmUserName);
+                lastFmUserName, redirectsEnabled);
         }
 
         return trackInfo;
