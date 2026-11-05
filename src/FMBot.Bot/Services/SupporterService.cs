@@ -2777,7 +2777,8 @@ public class SupporterService
 
     public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string discordUserName,
         string lastFmUserName, string type,
-        StripePricing pricing, StripeSupporter existingStripeSupporter = null, string source = "unknown")
+        StripePricing pricing, StripeSupporter existingStripeSupporter = null, string source = "unknown",
+        string userLocale = null)
     {
         var existingStripeCustomerId = "";
         if (existingStripeSupporter != null && existingStripeSupporter.PurchaserDiscordUserId == discordUserId)
@@ -2804,7 +2805,8 @@ public class SupporterService
             Type = type,
             ExistingCustomerId = existingStripeCustomerId,
             PriceId = priceId,
-            Source = source
+            Source = source,
+            UserLocale = userLocale ?? ""
         });
 
         return url?.CheckoutLink;
@@ -2813,7 +2815,7 @@ public class SupporterService
     public async Task<string> GetSupporterGiftCheckoutLink(ulong discordUserId, string discordUserName,
         string lastFmUserName,
         string priceId, string source, ulong giftReceiverDiscordUserId, string giftReceiverLastFmUserName,
-        string existingStripeCustomerId = null)
+        string existingStripeCustomerId = null, string userLocale = null)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
@@ -2825,7 +2827,8 @@ public class SupporterService
             PriceId = priceId,
             Source = source,
             GiftReceiverDiscordUserId = (long)giftReceiverDiscordUserId,
-            GiftReceiverLastFmUserName = giftReceiverLastFmUserName ?? ""
+            GiftReceiverLastFmUserName = giftReceiverLastFmUserName ?? "",
+            UserLocale = userLocale ?? ""
         });
 
         return url?.CheckoutLink;
@@ -2862,7 +2865,7 @@ public class SupporterService
     public async Task<CreateLinkReply> GetPremiumGuildCheckoutLink(ulong discordUserId, string discordUserName,
         string lastFmUserName,
         string type, ulong discordGuildId, string guildName, StripePricing pricing, string existingCustomerId = null,
-        string source = "unknown")
+        string source = "unknown", string userLocale = null)
     {
         var priceId = type.Equals("yearly", StringComparison.OrdinalIgnoreCase)
             ? pricing.YearlyPriceId
@@ -2878,7 +2881,8 @@ public class SupporterService
             PriceId = priceId,
             Source = source,
             DiscordGuildId = (long)discordGuildId,
-            GuildName = guildName ?? ""
+            GuildName = guildName ?? "",
+            UserLocale = userLocale ?? ""
         });
     }
 

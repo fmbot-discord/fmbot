@@ -76,16 +76,16 @@ public class PlayInteractions(
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             if (!SupporterService.IsSupporter(contextUser.UserType))
             {
+                var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale);
                 var supporterRow = new ActionRowProperties();
                 supporterRow.AddComponents(new ButtonProperties(
                     InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "streak-restore"),
-                    Constants.GetSupporterButton, ButtonStyle.Primary));
+                    localizer.Translate("buttons.getFmbotSupporter"), ButtonStyle.Primary));
 
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithEmbeds([
                         new EmbedProperties()
-                            .WithDescription(
-                                "To restore your past streaks, we need to scan your lifetime Last.fm history. Your lifetime history and more are only available for supporters.")
+                            .WithDescription(localizer.Translate("supporter.wall.streakRestore"))
                             .WithColor(DiscordConstants.WarningColorOrange)
                     ])
                     .WithComponents([supporterRow])

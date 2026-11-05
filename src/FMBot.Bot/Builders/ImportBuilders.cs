@@ -51,22 +51,21 @@ public class ImportBuilders
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            var service = importSource switch
+            var description = importSource switch
             {
-                PlaySource.SpotifyImport => "Spotify",
-                PlaySource.AppleMusicImport => "Apple Music",
-                _ => "Spotify or Apple Music"
+                PlaySource.SpotifyImport => context.Localize("import.supporterRequiredSpotify"),
+                PlaySource.AppleMusicImport => context.Localize("import.supporterRequiredAppleMusic"),
+                _ => context.Localize("import.supporterRequired")
             };
 
             response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
-            response.ComponentsContainer.AddComponent(new TextDisplayProperties(
-                $"Only supporters can import and access their {service} history in .fmbot."));
+            response.ComponentsContainer.AddComponent(new TextDisplayProperties(description));
 
             response.ComponentsContainer.WithSeparator();
             response.ComponentsContainer.AddComponent(new ActionRowProperties()
                 .AddComponents(new ButtonProperties(
                     InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: source),
-                    Constants.GetSupporterButton, ButtonStyle.Primary)));
+                    context.Localize("buttons.getFmbotSupporter"), ButtonStyle.Primary)));
 
             response.CommandResponse = CommandResponse.SupporterRequired;
 
@@ -86,7 +85,7 @@ public class ImportBuilders
         response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         response.ComponentsContainer.AddComponent(
-            new TextDisplayProperties("What music service history would you like to import?"));
+            new TextDisplayProperties(context.Localize("import.pickSource")));
 
         response.ComponentsContainer.WithSeparator();
         response.ComponentsContainer.AddComponent(new ActionRowProperties()
@@ -107,43 +106,29 @@ public class ImportBuilders
 
         response.ComponentsContainer.WithAccentColor(DiscordConstants.SpotifyColorGreen);
 
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties("## Spotify import instructions"));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(context.Localize("import.spotify.title")));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-        var requesting = new StringBuilder();
-        requesting.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify")} Requesting your data from Spotify");
-        requesting.AppendLine(
-            "1. Go to your **[Spotify privacy settings](https://www.spotify.com/us/account/privacy/)**");
-        requesting.AppendLine("2. Scroll down to \"Download your data\"");
-        requesting.AppendLine("3. Select **Extended streaming history**");
-        requesting.AppendLine("4. De-select the other options");
-        requesting.AppendLine("5. Press request data");
-        requesting.AppendLine("6. Confirm your data request through your email");
-        requesting.AppendLine("7. Wait up to 30 days for Spotify to deliver your files (usually takes 7)");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(requesting.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+            context.Localize("import.spotify.requesting",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Spotify).ToDiscordString("spotify"))) + "\n"));
         response.ComponentsContainer.AddComponents(
             new ActionRowProperties().AddComponents(new LinkButtonProperties(
-                $"https://www.spotify.com/us/account/privacy/", "Spotify privacy page")));
+                $"https://www.spotify.com/us/account/privacy/", context.Localize("import.spotify.privacyButton"))));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-        var importing = new StringBuilder();
-        importing.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing your data into .fmbot");
-        importing.AppendLine("1. Download the file Spotify provided");
-        importing.AppendLine("2. Press **Upload files** below and add the `.zip` file");
-        importing.AppendLine("3. Having issues? You can also upload the `.json` files separately, up to 10 at a time");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(importing.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+            context.Localize("import.spotify.importing",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports"))) + "\n"));
         response.ComponentsContainer.AddComponents(new ActionRowProperties()
             .AddComponents(new ButtonProperties(
-                $"{InteractionConstants.ImportUpload}:{nameof(PlaySource.SpotifyImport)}", "Upload files",
+                $"{InteractionConstants.ImportUpload}:{nameof(PlaySource.SpotifyImport)}",
+                context.Localize("import.uploadFiles"),
                 ButtonStyle.Primary)));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-        var notes = new StringBuilder();
-        notes.AppendLine("### 📝 Notes");
-        notes.AppendLine(
-            "- We filter out duplicates and skips, so don't worry about submitting the same file twice");
-        notes.AppendLine("- The importing service is only available with an active supporter subscription");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(notes.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+            context.Localize("import.spotify.notes") + "\n"));
 
         var allPlays = await this._playService.GetAllUserPlays(context.ContextUser.UserId, false);
         var count = allPlays.Count(w => w.PlaySource == PlaySource.SpotifyImport);
@@ -152,15 +137,14 @@ public class ImportBuilders
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
             var importedPlays = new StringBuilder();
-            importedPlays.AppendLine("### ⚙️ Your imported Spotify plays");
-            importedPlays.AppendLine(
-                $"You have already imported **{count.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
+            importedPlays.AppendLine(context.Localize("import.spotify.importedTitle"));
+            importedPlays.AppendLine(context.LocalizeCount("import.alreadyImported", count));
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(importedPlays.ToString()));
             response.ComponentsContainer.AddComponent(new ActionRowProperties()
                 .AddComponents(new ButtonProperties(
-                    InteractionConstants.ImportManage, "Manage import settings", ButtonStyle.Secondary))
+                    InteractionConstants.ImportManage, context.Localize("import.manageSettings"), ButtonStyle.Secondary))
                 .AddComponents(new ButtonProperties(
-                    InteractionConstants.ImportModify.Start, "Modify imports", ButtonStyle.Secondary)));
+                    InteractionConstants.ImportModify.Start, context.Localize("import.modifyImports"), ButtonStyle.Secondary)));
         }
 
         return response;
@@ -175,47 +159,29 @@ public class ImportBuilders
 
         response.ComponentsContainer.WithAccentColor(DiscordConstants.AppleMusicRed);
 
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties("## Apple Music import instructions"));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(context.Localize("import.appleMusic.title")));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-        var requesting = new StringBuilder();
-        requesting.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music")} Requesting your data from Apple");
-        requesting.AppendLine("1. Go to your **[Apple privacy settings](https://privacy.apple.com/)**");
-        requesting.AppendLine("2. Click on **Request a copy of your data**");
-        requesting.AppendLine("3. Select **Apple Media Services Information**");
-        requesting.AppendLine("4. De-select the other options");
-        requesting.AppendLine("5. Press **Continue**");
-        requesting.AppendLine("6. Press **Complete request**");
-        requesting.AppendLine("7. Wait up to 7 days for Apple to deliver your files");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(requesting.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+            context.Localize("import.appleMusic.requesting",
+                ("emote", EmojiProperties.Custom(DiscordConstants.AppleMusic).ToDiscordString("apple_music"))) + "\n"));
         response.ComponentsContainer.AddComponents(
             new ActionRowProperties().AddComponents(new LinkButtonProperties(
-                $"https://privacy.apple.com/", "Apple Data and Privacy")));
+                $"https://privacy.apple.com/", context.Localize("import.appleMusic.privacyButton"))));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-        var importing = new StringBuilder();
-        importing.AppendLine($"### {EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports")} Importing your data into .fmbot");
-        importing.AppendLine("1. Download the file Apple provided");
-        importing.AppendLine("2. Press **Upload file** below and add the `.zip` file");
-        importing.AppendLine(
-            "3. Got multiple zip files? You can try them all until one succeeds. Only one of them contains your play history");
-        importing.AppendLine(
-            "4. Having issues? You can also upload the `Apple Music Play Activity.csv` file separately");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(importing.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+            context.Localize("import.appleMusic.importing",
+                ("emote", EmojiProperties.Custom(DiscordConstants.Imports).ToDiscordString("imports"))) + "\n"));
         response.ComponentsContainer.AddComponents(new ActionRowProperties()
             .AddComponents(new ButtonProperties(
-                $"{InteractionConstants.ImportUpload}:{nameof(PlaySource.AppleMusicImport)}", "Upload file",
+                $"{InteractionConstants.ImportUpload}:{nameof(PlaySource.AppleMusicImport)}",
+                context.Localize("import.uploadFile"),
                 ButtonStyle.Primary)));
         response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
-        var notes = new StringBuilder();
-        notes.AppendLine("### 📝 Notes");
-        notes.AppendLine(
-            "- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
-        notes.AppendLine(
-            "- Exceeding Discord file limits? Try on [our server](https://discord.gg/fmbot) in #commands.");
-        notes.AppendLine("- The importing service is only available with an active supporter subscription");
-        response.ComponentsContainer.AddComponent(new TextDisplayProperties(notes.ToString()));
+        response.ComponentsContainer.AddComponent(new TextDisplayProperties(
+            context.Localize("import.appleMusic.notes") + "\n"));
 
         var allPlays = await this._playService.GetAllUserPlays(context.ContextUser.UserId, false);
         var count = allPlays.Count(w => w.PlaySource == PlaySource.AppleMusicImport);
@@ -224,15 +190,14 @@ public class ImportBuilders
             response.ComponentsContainer.AddComponent(new ComponentSeparatorProperties());
 
             var importedPlays = new StringBuilder();
-            importedPlays.AppendLine("### ⚙️ Your imported Apple Music plays");
-            importedPlays.AppendLine(
-                $"You have already imported **{count.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the buttons below.");
+            importedPlays.AppendLine(context.Localize("import.appleMusic.importedTitle"));
+            importedPlays.AppendLine(context.LocalizeCount("import.alreadyImported", count));
             response.ComponentsContainer.AddComponent(new TextDisplayProperties(importedPlays.ToString()));
             response.ComponentsContainer.AddComponent(new ActionRowProperties()
                 .AddComponents(new ButtonProperties(
-                    InteractionConstants.ImportManage, "Manage import settings", ButtonStyle.Secondary))
+                    InteractionConstants.ImportManage, context.Localize("import.manageSettings"), ButtonStyle.Secondary))
                 .AddComponents(new ButtonProperties(
-                    InteractionConstants.ImportModify.Start, "Modify imports", ButtonStyle.Secondary)));
+                    InteractionConstants.ImportModify.Start, context.Localize("import.modifyImports"), ButtonStyle.Secondary)));
         }
 
         return response;
@@ -274,41 +239,34 @@ public class ImportBuilders
         switch (context.ContextUser.DataSource)
         {
             case DataSource.LastFm:
-                importActivated.AppendLine(
-                    "Your import setting is currently still set to just Last.fm, so imports will not be used. You can change this manually with the button below.");
+                importActivated.AppendLine(context.Localize("import.complete.lastFmOnly"));
                 break;
             case DataSource.FullImportThenLastFm:
-                importActivated.AppendLine(
-                    "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
-
-                importSetting.AppendLine(
-                    $"Your import setting has been set to **Full imports, then Last.fm**. This uses your full {serviceName} history and adds your Last.fm scrobbles afterwards.");
+                importActivated.AppendLine(context.Localize("import.complete.activated"));
+                importSetting.AppendLine(context.Localize("import.complete.settingFullImportsThenLastFm",
+                    ("service", serviceName)));
                 break;
             case DataSource.ImportThenFullLastFm:
-                importActivated.AppendLine(
-                    "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
-
-                importSetting.AppendLine(
-                    $"Your import setting has been set to **Imports, then full Last.fm**. This uses your {serviceName} history up until you started using Last.fm.");
+                importActivated.AppendLine(context.Localize("import.complete.activated"));
+                importSetting.AppendLine(context.Localize("import.complete.settingImportsThenFullLastFm",
+                    ("service", serviceName)));
                 break;
             case DataSource.MergedDeduplicated:
-                importActivated.AppendLine(
-                    "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
-
-                importSetting.AppendLine(
-                    $"Your import setting has been set to **Smart deduplication**. This combines your full {serviceName} history with your Last.fm scrobbles and removes imported plays you already scrobbled to Last.fm.");
+                importActivated.AppendLine(context.Localize("import.complete.activated"));
+                importSetting.AppendLine(context.Localize("import.complete.settingSmartDeduplication",
+                    ("service", serviceName)));
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
 
         container.WithSeparator();
-        container.WithTextDisplay($"**✅ Importing service activated**\n{importActivated}");
+        container.WithTextDisplay($"{context.Localize("import.complete.activatedTitle")}\n{importActivated}");
 
         if (importSetting.Length > 0)
         {
             container.WithSeparator();
-            container.WithTextDisplay($"**⚙️ Current import setting**\n{importSetting}");
+            container.WithTextDisplay($"{context.Localize("import.complete.settingTitle")}\n{importSetting}");
         }
 
         var plays = await this._playService.GetAllUserPlays(context.ContextUser.UserId);
@@ -323,9 +281,9 @@ public class ImportBuilders
         container.WithSeparator();
         container.WithActionRow(new ActionRowProperties()
             .AddComponents(new ButtonProperties($"{InteractionConstants.RecapAlltime}:{context.ContextUser.UserId}",
-                "View your stats", ButtonStyle.Primary))
-            .AddComponents(new ButtonProperties(InteractionConstants.ImportManage, "Manage import settings",
-                ButtonStyle.Secondary)));
+                context.Localize("import.viewStats"), ButtonStyle.Primary))
+            .AddComponents(new ButtonProperties(InteractionConstants.ImportManage,
+                context.Localize("import.manageSettings"), ButtonStyle.Secondary)));
 
         return response;
     }

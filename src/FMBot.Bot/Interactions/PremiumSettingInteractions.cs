@@ -306,7 +306,7 @@ public class PremiumSettingInteractions(
 
             var checkout = await supporterService.GetPremiumGuildCheckoutLink(this.Context.User.Id,
                 this.Context.User.Username, contextUser?.UserNameLastFM, type, this.Context.Guild.Id,
-                this.Context.Guild.Name, pricing, existingCustomerId, source);
+                this.Context.Guild.Name, pricing, existingCustomerId, source, this.Context.Interaction.UserLocale);
 
             if (checkout == null || checkout.GuildAlreadySubscribed)
             {

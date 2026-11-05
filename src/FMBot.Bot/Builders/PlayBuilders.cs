@@ -2173,7 +2173,7 @@ public class PlayBuilder
         }
 
         var supporterDescription = context.ContextUser.UserType == UserType.User
-            ? $"Want an extra page with your artist discoveries and a monthly overview? \n[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})"
+            ? context.Localize("supporter.upsell.yearPage", ("url", Constants.GetSupporterDiscordLink))
             : "";
 
         pages.Add(new PageBuilder()
@@ -2283,11 +2283,10 @@ public class PlayBuilder
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription(
-                $"To see the biggest gaps between when you listened to certain artists, we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
+            response.Embed.WithDescription(context.Localize("supporter.wall.gaps"));
 
             response.Components = new ActionRowProperties()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -2297,8 +2296,7 @@ public class PlayBuilder
 
         if (userSettings.UserType == UserType.User)
         {
-            response.Embed.WithDescription(
-                $"Sorry, the gaps command uses somebody's lifetime listening history. You can only use this command on other supporters.");
+            response.Embed.WithDescription(context.Localize("supporter.wall.gapsOther"));
 
             response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,

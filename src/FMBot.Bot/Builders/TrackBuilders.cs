@@ -2385,11 +2385,11 @@ public class TrackBuilders
 
         response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
             InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"),
-            "Get supporter", ButtonStyle.Primary))
+            context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
         {
             Components =
             [
-                new TextDisplayProperties("Viewing track lyrics in .fmbot is only available for .fmbot supporters.")
+                new TextDisplayProperties(context.Localize("supporter.wall.lyrics"))
             ]
         });
 
@@ -2398,11 +2398,11 @@ public class TrackBuilders
             response.ComponentsContainer.WithSeparator();
             response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
                 $"{InteractionConstants.PremiumServer.GetOverview}:lyrics",
-                "Premium server", ButtonStyle.Secondary))
+                context.Localize("buttons.premiumServer"), ButtonStyle.Secondary))
             {
                 Components =
                 [
-                    new TextDisplayProperties("Or unlock it for everyone in this server with Premium server.")
+                    new TextDisplayProperties(context.Localize("supporter.wall.lyricsPremiumServer"))
                 ]
             });
         }

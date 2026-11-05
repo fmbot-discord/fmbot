@@ -130,5 +130,8 @@
         <None Update="Resources\SlashCommandLocalizations\en.json">
             <CopyToOutputDirectory>Never</CopyToOutputDirectory>
         </None>
+        <None Include="Resources\SlashCommandLocalizations\es-ES.json" Link="Resources\SlashCommandLocalizations\es-419.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 </Project>
