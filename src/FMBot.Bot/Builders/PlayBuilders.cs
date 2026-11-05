@@ -1103,10 +1103,18 @@ public class PlayBuilder
         var allTime = timeSettings.TimePeriod == TimePeriod.AllTime;
 
         Task<UserPlayHistory> playHistoryTask = null;
+        Task<UserPlayHistory> ownPlayHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && userSettings.UserType != UserType.User)
         {
             playHistoryTask = this._playService.GetUserPlayHistory(userSettings.UserId,
                 allTime ? null : timeSettings.StartDateTime, allTime ? null : timeSettings.EndDateTime);
+
+            if (userSettings.DifferentUser && userSettings.UserId != context.ContextUser.UserId &&
+                context.GraphType != GraphType.Off)
+            {
+                ownPlayHistoryTask = this._playService.GetUserPlayHistory(context.ContextUser.UserId,
+                    allTime ? null : timeSettings.StartDateTime, allTime ? null : timeSettings.EndDateTime);
+            }
         }
 
         var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
@@ -1128,13 +1136,16 @@ public class PlayBuilder
             : context.LocalizeCount("plays.scrobblesInPeriod", count.Value, ("user", userTitle), ("period", context.Localizer.AltPeriodLabel(timeSettings)));
 
         var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+        var ownPlayHistory = ownPlayHistoryTask != null ? await ownPlayHistoryTask : null;
 
         var playHistoryGraph = playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: allTime ? null : timeSettings.StartDateTime,
                 windowUntil: allTime ? null : timeSettings.EndDateTime,
-                windowTimeZone: userSettings.TimeZone)
+                windowTimeZone: userSettings.TimeZone,
+                ownDailyPlays: ownPlayHistory?.DailyPlays,
+                displayName: userSettings.DisplayName)
             : null;
 
         if (playHistoryGraph != null)
