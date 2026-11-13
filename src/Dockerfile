@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-amd64 AS base
+FROM mcr.microsoft.com/dotnet/runtime:11.0-resolute-amd64 AS base
 
 RUN apt-get update -y && apt-get install -y libjemalloc2 libgdiplus libzstd-dev software-properties-common curl
 RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg8 && apt-get update -y && apt-get install -y ffmpeg
@@ -20,7 +20,7 @@ ENV PUPPETEER_EXECUTABLE_PATH="/usr/bin/google-chrome-stable"
 
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 RUN dotnet tool install --global dotnet-dump \
