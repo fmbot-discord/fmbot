@@ -472,6 +472,9 @@
         "private": {
           "description": "Mostra la risposta solo a te"
         },
+        "redirects": {
+          "description": "Attiva o disattiva i redirect dei nomi brano di Last.fm (predefinito: attivi)"
+        },
         "track": {
           "description": "Il brano da cercare (predefinito: in riproduzione)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Il tipo di risposta che vuoi - cambia il predefinito con /mode"
+        },
+        "redirects": {
+          "description": "Attiva o disattiva i redirect dei nomi brano di Last.fm (predefinito: attivi)"
         },
         "track": {
           "description": "Il brano da cercare (predefinito: in riproduzione)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Mostra info sul brano che stai ascoltando o cercando",
       "parameters": {
+        "redirects": {
+          "description": "Attiva o disattiva i redirect dei nomi brano di Last.fm (predefinito: attivi)"
+        },
         "track": {
           "description": "Il brano da cercare (predefinito: in riproduzione)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Mostra il playcount del brano attuale o di quello che stai cercando",
       "parameters": {
+        "redirects": {
+          "description": "Attiva o disattiva i redirect dei nomi brano di Last.fm (predefinito: attivi)"
+        },
         "time-period": {
           "description": "Periodo di tempo per cui mostrare i plays"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Disattiva i filtri del server"
+        },
+        "redirects": {
+          "description": "Attiva o disattiva i redirect dei nomi brano di Last.fm (predefinito: attivi)"
         },
         "role-picker": {
           "description": "Mostra un selettore di ruoli per filtrare"

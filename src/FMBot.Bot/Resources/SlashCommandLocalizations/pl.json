@@ -472,6 +472,9 @@
         "private": {
           "description": "Odpowiedź widoczna tylko dla ciebie"
         },
+        "redirects": {
+          "description": "Przełącz przekierowania nazw utworów Last.fm (domyślnie włączone)"
+        },
         "track": {
           "description": "Utwór do wyszukania (domyślnie aktualnie odtwarzany)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Typ odpowiedzi - domyślny zmienisz przez /mode"
+        },
+        "redirects": {
+          "description": "Przełącz przekierowania nazw utworów Last.fm (domyślnie włączone)"
         },
         "track": {
           "description": "Utwór do wyszukania (domyślnie aktualnie odtwarzany)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Pokazuje informacje o utworze, którego słuchasz lub szukasz",
       "parameters": {
+        "redirects": {
+          "description": "Przełącz przekierowania nazw utworów Last.fm (domyślnie włączone)"
+        },
         "track": {
           "description": "Utwór do wyszukania (domyślnie aktualnie odtwarzany)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Pokazuje liczbę odtworzeń obecnego utworu lub tego, którego szukasz",
       "parameters": {
+        "redirects": {
+          "description": "Przełącz przekierowania nazw utworów Last.fm (domyślnie włączone)"
+        },
         "time-period": {
           "description": "Okres, dla którego pokazać odtworzenia"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Wyłącz filtry serwera"
+        },
+        "redirects": {
+          "description": "Przełącz przekierowania nazw utworów Last.fm (domyślnie włączone)"
         },
         "role-picker": {
           "description": "Wyświetl selektor ról do filtrowania"

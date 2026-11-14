@@ -57,6 +57,9 @@ public static class InteractionContextExtensions
                 MessageCommandInteraction messageCommand => Log.ForContext("targetMessageId", messageCommand.Data.TargetMessage?.Id),
                 _ => Log.Logger
             };
+            logger = logger
+                .ForContext("userLocale", context.Interaction.UserLocale)
+                .ForContext("guildLocale", context.Interaction.GuildLocale);
 
             if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
                 !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
@@ -152,16 +155,20 @@ public static class InteractionContextExtensions
 
             var responseTimeMs = (long)(DateTimeOffset.UtcNow - Snowflake.Timestamp(context.Interaction.Id)).TotalMilliseconds;
 
+            var logger = Log
+                .ForContext("userLocale", context.Interaction.UserLocale)
+                .ForContext("guildLocale", context.Interaction.GuildLocale);
+
             if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
                 !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
             {
-                Log.Information(
+                logger.Information(
                     "ComponentUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {responseTimeMs}ms | {messageContent}",
                     context.User?.Username, context.User?.Id, commandResponse, responseTimeMs, commandName);
             }
             else
             {
-                Log.Information(
+                logger.Information(
                     "ComponentUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {responseTimeMs}ms | {messageContent}",
                     context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
                     responseTimeMs, commandName);

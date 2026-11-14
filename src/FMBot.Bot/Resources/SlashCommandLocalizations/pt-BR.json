@@ -472,6 +472,9 @@
         "private": {
           "description": "Mostrar a resposta só para você"
         },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de faixa do Last.fm (padrão: ativado)"
+        },
         "track": {
           "description": "A faixa a buscar (padrão: a que está tocando)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "O tipo de resposta que você quer - mude o padrão com /mode"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de faixa do Last.fm (padrão: ativado)"
         },
         "track": {
           "description": "A faixa a buscar (padrão: a que está tocando)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Mostra informações da faixa que você está ouvindo ou buscando",
       "parameters": {
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de faixa do Last.fm (padrão: ativado)"
+        },
         "track": {
           "description": "A faixa a buscar (padrão: a que está tocando)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Mostra a contagem de plays da faixa atual ou da que você buscar",
       "parameters": {
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de faixa do Last.fm (padrão: ativado)"
+        },
         "time-period": {
           "description": "Período para mostrar os plays"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Desativar filtros do servidor"
+        },
+        "redirects": {
+          "description": "Ativa/desativa redirecionamentos de nome de faixa do Last.fm (padrão: ativado)"
         },
         "role-picker": {
           "description": "Exibe um seletor para filtrar por cargos"

@@ -472,6 +472,9 @@
         "private": {
           "description": "जवाब सिर्फ़ तुम्हें दिखे"
         },
+        "redirects": {
+          "description": "Last.fm track नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
         "track": {
           "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "जवाब किस तरह का चाहिए - डिफ़ॉल्ट /mode से बदलो"
+        },
+        "redirects": {
+          "description": "Last.fm track नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
         },
         "track": {
           "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "मौजूदा या खोजे गए track की जानकारी दिखाता है",
       "parameters": {
+        "redirects": {
+          "description": "Last.fm track नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
         "track": {
           "description": "जो track तुम खोजना चाहते हो (डिफ़ॉल्ट: अभी बज रहा)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "मौजूदा track या खोजे गए track का playcount दिखाता है",
       "parameters": {
+        "redirects": {
+          "description": "Last.fm track नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
+        },
         "time-period": {
           "description": "किस समय अवधि के plays दिखाने हैं"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "सर्वर फ़िल्टर बंद करो"
+        },
+        "redirects": {
+          "description": "Last.fm track नाम रीडायरेक्ट चालू/बंद करो (डिफ़ॉल्ट: चालू)"
         },
         "role-picker": {
           "description": "रोल से फ़िल्टर करने के लिए रोल-पिकर दिखाओ"

@@ -795,12 +795,12 @@ public class UserInteractions(
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithEmbeds([
                         new EmbedProperties()
-                            .WithDescription("This option is only available for .fmbot supporters.")
+                            .WithDescription(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("supporter.wall.optionOnly"))
                             .WithColor(DiscordConstants.WarningColorOrange)
                     ])
                     .WithComponents([
                         new ActionRowProperties()
-                            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                            .WithButton(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-accentcolor"))
                     ])
                     .WithFlags(MessageFlags.Ephemeral)));
@@ -920,12 +920,12 @@ public class UserInteractions(
             await this.Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties()
                 .WithEmbeds([
                     new EmbedProperties()
-                        .WithDescription("You selected a supporter-exclusive button. Please pick a different button or purchase supporter below.")
+                        .WithDescription(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("supporter.wall.buttonSelected"))
                         .WithColor(DiscordConstants.InformationColorBlue)
                 ])
                 .WithComponents([
                     new ActionRowProperties()
-                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                        .WithButton(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-buttons"))
                 ])
                 .WithFlags(MessageFlags.Ephemeral));
@@ -1196,12 +1196,12 @@ public class UserInteractions(
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithEmbeds([
                         new EmbedProperties()
-                            .WithDescription("This setting is only available for .fmbot supporters.")
+                            .WithDescription(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("supporter.wall.settingOnly"))
                             .WithColor(DiscordConstants.WarningColorOrange)
                     ])
                     .WithComponents([
                         new ActionRowProperties()
-                            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                            .WithButton(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                                     source: "graph-type"))
                     ])
@@ -1230,12 +1230,12 @@ public class UserInteractions(
                 await RespondAsync(InteractionCallback.Message(new InteractionMessageProperties()
                     .WithEmbeds([
                         new EmbedProperties()
-                            .WithDescription("This setting is only available for .fmbot supporters.")
+                            .WithDescription(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("supporter.wall.settingOnly"))
                             .WithColor(DiscordConstants.WarningColorOrange)
                     ])
                     .WithComponents([
                         new ActionRowProperties()
-                            .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                            .WithButton(Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                                     source: "graph-color"))
                     ])

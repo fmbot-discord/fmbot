@@ -472,6 +472,9 @@
         "private": {
           "description": "N'afficher la réponse qu'à toi"
         },
+        "redirects": {
+          "description": "Activer/désactiver les redirections de nom de titre Last.fm (activées par défaut)"
+        },
         "track": {
           "description": "Le titre à rechercher (par défaut celui en cours d'écoute)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Le type de réponse souhaité - change la valeur par défaut avec /mode"
+        },
+        "redirects": {
+          "description": "Activer/désactiver les redirections de nom de titre Last.fm (activées par défaut)"
         },
         "track": {
           "description": "Le titre à rechercher (par défaut celui en cours d'écoute)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Affiche les infos du titre en cours d'écoute ou recherché",
       "parameters": {
+        "redirects": {
+          "description": "Activer/désactiver les redirections de nom de titre Last.fm (activées par défaut)"
+        },
         "track": {
           "description": "Le titre à rechercher (par défaut celui en cours d'écoute)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Affiche le nombre de plays du titre en cours ou recherché",
       "parameters": {
+        "redirects": {
+          "description": "Activer/désactiver les redirections de nom de titre Last.fm (activées par défaut)"
+        },
         "time-period": {
           "description": "Période des plays à afficher"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Désactiver les filtres du serveur"
+        },
+        "redirects": {
+          "description": "Activer/désactiver les redirections de nom de titre Last.fm (activées par défaut)"
         },
         "role-picker": {
           "description": "Afficher un sélecteur de rôles pour filtrer par rôle"

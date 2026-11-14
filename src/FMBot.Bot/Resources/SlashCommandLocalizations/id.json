@@ -472,6 +472,9 @@
         "private": {
           "description": "Hanya tampilkan respons ke kamu"
         },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama lagu Last.fm (default: aktif)"
+        },
         "track": {
           "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Jenis respons yang kamu mau - ubah default dengan /mode"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama lagu Last.fm (default: aktif)"
         },
         "track": {
           "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Menampilkan info lagu untuk lagu yang sedang kamu dengarkan atau cari",
       "parameters": {
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama lagu Last.fm (default: aktif)"
+        },
         "track": {
           "description": "Lagu yang ingin kamu cari (default: yang sedang diputar)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Menampilkan playcount untuk lagu saat ini atau yang kamu cari",
       "parameters": {
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama lagu Last.fm (default: aktif)"
+        },
         "time-period": {
           "description": "Periode waktu untuk menampilkan plays"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Nonaktifkan filter server"
+        },
+        "redirects": {
+          "description": "Aktifkan/nonaktifkan redirect nama lagu Last.fm (default: aktif)"
         },
         "role-picker": {
           "description": "Tampilkan pemilih role untuk memfilter dengan role"

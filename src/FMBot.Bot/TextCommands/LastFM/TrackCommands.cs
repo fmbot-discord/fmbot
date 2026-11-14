@@ -60,9 +60,11 @@ public class TrackCommands(
 
             var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
             var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
+            var redirectsEnabled = SettingService.RedirectsEnabled(trackValues);
 
             var response =
-                await trackBuilders.TrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
+                await trackBuilders.TrackAsync(new ContextModel(this.Context, prfx, contextUser),
+                    redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -96,11 +98,13 @@ public class TrackCommands(
         var userSettings = await settingService.GetUser(trackValues, contextUser, this.Context);
         var prfx = prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var period = SettingService.GetPlaysTimePeriod(userSettings.NewSearchValue, userSettings.TimeZone,
+        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
+        var period = SettingService.GetPlaysTimePeriod(redirectsEnabled.NewSearchValue, userSettings.TimeZone,
             LocalizationService.GetLanguage(this.Context.Guild?.Id, this.Context.Guild?.PreferredLocale));
 
         var response = await trackBuilders.TrackPlays(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, period.SearchValue, period.TimeSettings, period.SearchValueWithoutPeriod);
+            userSettings, period.SearchValue, redirectsEnabled.Enabled, period.TimeSettings,
+            period.SearchValueWithoutPeriod);
 
         await this.Context.SendResponse(this.Interactivity, response, userService);
         await this.Context.LogCommandUsedAsync(response, userService);
@@ -309,7 +313,8 @@ public class TrackCommands(
     [Summary("Shows what other users listen to a track in your server")]
     [Options("Response mode: `image`, `embed` or `pages`",
         "Role filter: `rolefilter` / `rf` (Premium server)",
-        "Disable filters: `nofilter` / `nf`")]
+        "Disable filters: `nofilter` / `nf`",
+        "Disable track redirects: `noredirect` / `nr`")]
     [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go",
         "whoknowstrack Natasha Bedingfield | Unwritten", "whoknowstrack rolefilter")]
     [UsernameSetRequired]
@@ -346,7 +351,8 @@ public class TrackCommands(
 
             var response = await trackBuilders.WhoKnowsTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
-                settings.DisplayRoleFilter, filterDisabled: settings.QualityFilterDisabled);
+                settings.DisplayRoleFilter, redirectsEnabled: settings.RedirectsEnabled,
+                filterDisabled: settings.QualityFilterDisabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);
@@ -428,7 +434,8 @@ public class TrackCommands(
         try
         {
             var response = await trackBuilders.FriendsWhoKnowTrackAsync(
-                new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue);
+                new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
+                settings.RedirectsEnabled);
 
             await this.Context.SendResponse(this.Interactivity, response, userService);
             await this.Context.LogCommandUsedAsync(response, userService);

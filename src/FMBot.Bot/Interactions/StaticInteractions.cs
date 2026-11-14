@@ -95,15 +95,16 @@ public class StaticInteractions(
 
             var link = await supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
                 this.Context.User.Username, contextUser.UserNameLastFM, type, pricing, existingStripeSupporter,
-                source);
+                source, this.Context.Interaction.UserLocale);
 
+            var localizer = Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale);
             var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
             var description = new StringBuilder();
-            description.AppendLine($"**Click the unique link below to purchase supporter!**");
+            description.AppendLine(localizer.Translate("supporter.checkout.clickLink"));
             if (type == "yearly")
             {
-                description.AppendLine($"-# {pricing.YearlySummary}");
+                description.AppendLine($"-# {localizer.Translate("supporter.checkout.summaryYearly", ("price", pricing.YearlyPriceString))}");
             }
             else if (type == "lifetime")
             {
@@ -111,16 +112,17 @@ public class StaticInteractions(
             }
             else
             {
-                description.AppendLine($"-# {pricing.MonthlySummary}");
+                description.AppendLine($"-# {localizer.Translate("supporter.checkout.summaryMonthly", ("price", pricing.MonthlyPriceString))}");
             }
 
             if (SupporterService.IsSupporter(contextUser.UserType))
             {
-                embed.AddField("⚠️ Note",
-                    "You currently already have access to supporter on your .fmbot account.");
+                embed.AddField(localizer.Translate("supporter.checkout.noteTitle"),
+                    localizer.Translate("supporter.checkout.alreadySupporter"));
             }
 
-            var components = SupporterService.BuildCheckoutComponents("Complete purchase", link, description);
+            var components = SupporterService.BuildCheckoutComponents(
+                localizer.Translate("supporter.checkout.completePurchase"), link, description);
             embed.WithDescription(description.ToString());
 
             await this.Context.Interaction.ModifyResponseAsync(m =>
@@ -388,7 +390,8 @@ public class StaticInteractions(
                 recipientUser.UserNameLastFM,
                 existingStripeSupporter?.PurchaserDiscordUserId == this.Context.User.Id
                     ? existingStripeSupporter.StripeCustomerId
-                    : null);
+                    : null,
+                this.Context.Interaction.UserLocale);
 
             if (string.IsNullOrEmpty(checkoutLink))
             {

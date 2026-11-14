@@ -34,6 +34,7 @@ message CreateLinkOptions {
   int64 discordGuildId = 9;
   string guildName = 10;
   string discordUserName = 11;
+  string userLocale = 12;
 }
 
 message CreateLinkReply {

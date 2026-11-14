@@ -32,19 +32,28 @@ public class GraphService
     public PlayHistoryGraph RenderPlayHistory(IReadOnlyList<GraphPoint> dailyPlays, CultureInfo culture,
         SKColor lineColor, Func<double, string> valueLabel, GraphInterval? fixedInterval = null,
         DateTime? windowFrom = null, DateTime? windowUntil = null, int width = 660, int height = 165,
-        GraphType style = GraphType.Line)
+        GraphType style = GraphType.Line, GraphComparison comparison = null)
     {
+        dailyPlays = dailyPlays?.Where(w => w.Date.Year >= 2000).ToList();
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
             return null;
         }
 
+        var compareDailyPlays = comparison?.DailyPlays?.Where(w => w.Date.Year >= 2000).ToList();
+        if (compareDailyPlays is { Count: 0 })
+        {
+            compareDailyPlays = null;
+        }
+
         var now = DateTime.UtcNow;
         var until = windowUntil.HasValue && windowUntil.Value < now ? windowUntil.Value : now;
-        var earliest = windowFrom ?? dailyPlays[0].Date;
+        var earliest = windowFrom ?? (compareDailyPlays != null && compareDailyPlays[0].Date < dailyPlays[0].Date
+            ? compareDailyPlays[0].Date
+            : dailyPlays[0].Date);
 
         var totalPlays = 0d;
-        foreach (var day in dailyPlays)
+        foreach (var day in dailyPlays.Concat(compareDailyPlays ?? []))
         {
             totalPlays += day.Value;
         }
@@ -78,10 +87,14 @@ public class GraphService
 
         var points = GraphSeries.FromDailyCounts(dailyPlays, interval, from, until,
             bar && windowFrom.HasValue ? from : null);
+        var comparePoints = compareDailyPlays != null
+            ? GraphSeries.FromDailyCounts(compareDailyPlays, interval, from, until,
+                bar && windowFrom.HasValue ? from : null)
+            : null;
 
         if (!windowFrom.HasValue && !bar)
         {
-            TrimLeadingEmpty(points, GraphSeries.EarliestStart(until, interval));
+            TrimLeadingEmpty(points, comparePoints, GraphSeries.EarliestStart(until, interval));
         }
 
         if ((!bar && points.Count < 3) || points.Count(w => w.Value > 0) < 2 || points.Sum(s => s.Value) < MinimumPlays)
@@ -89,11 +102,19 @@ public class GraphService
             return null;
         }
 
+        if (comparePoints != null && comparePoints.All(a => a.Value <= 0))
+        {
+            comparePoints = null;
+        }
+
         var image = RenderLineGraph(new LineGraph
         {
             Points = points,
+            ComparePoints = comparePoints,
+            CompareColor = comparison?.Color ?? GraphColors.FmbotBlue,
+            Legend = comparePoints != null ? [comparison.PrimaryLegend, comparison.CompareLegend] : [],
             Width = width,
-            Height = height,
+            Height = comparePoints != null ? height + (int)Math.Ceiling(LegendHeight * width / BaseWidth) : height,
             LineColor = lineColor,
             ValueLabel = valueLabel,
             Culture = culture,
@@ -117,6 +138,7 @@ public class GraphService
     {
         var dailyTotals = dailyBase
             .Concat(dailyTop)
+            .Where(w => w.Date.Year >= 2000)
             .GroupBy(g => g.Date)
             .OrderBy(o => o.Key)
             .Select(s => new GraphPoint
@@ -171,9 +193,14 @@ public class GraphService
             };
     }
 
-    private static void TrimLeadingEmpty(List<GraphPoint> points, DateTime keepFrom)
+    private static void TrimLeadingEmpty(List<GraphPoint> points, List<GraphPoint> comparePoints, DateTime keepFrom)
     {
         var firstWithPlays = points.FindIndex(f => f.Value > 0);
+        var compareFirstWithPlays = comparePoints?.FindIndex(f => f.Value > 0) ?? -1;
+        if (compareFirstWithPlays >= 0 && (firstWithPlays < 0 || compareFirstWithPlays < firstWithPlays))
+        {
+            firstWithPlays = compareFirstWithPlays;
+        }
         if (firstWithPlays <= 0)
         {
             return;
@@ -185,6 +212,7 @@ public class GraphService
         if (trim > 0)
         {
             points.RemoveRange(0, trim);
+            comparePoints?.RemoveRange(0, trim);
         }
     }
 
@@ -210,7 +238,7 @@ public class GraphService
 
         var dataMin = double.MaxValue;
         var dataMax = double.MinValue;
-        foreach (var point in graph.Points)
+        foreach (var point in graph.Points.Concat(graph.ComparePoints ?? []))
         {
             dataMin = Math.Min(dataMin, point.Value);
             dataMax = Math.Max(dataMax, point.Value);
@@ -235,8 +263,14 @@ public class GraphService
         var maxYTicks = Math.Clamp((int)(plotHeight / (FontSize * 1.3f * scale)) + 1, 2, graph.MaxYTicks);
         var valueGap = 2f * scale;
 
+        List<GraphPoint>[] barSeries = graph.ComparePoints != null
+            ? [graph.Points, graph.ComparePoints]
+            : [graph.Points];
+
+        var valueSlot = (plotRight - EdgeMargin * scale) / graph.Points.Count;
         var barValues = barStyle
-            ? BarValueLabels(graph, valueFont, (plotRight - EdgeMargin * scale) / graph.Points.Count)
+            ? BarValueLabels(graph, barSeries, valueFont,
+                barSeries.Length == 1 ? valueSlot : (valueSlot * 0.8f + BarGap * scale) / 2)
             : null;
 
         var axis = barValues == null
@@ -254,12 +288,19 @@ public class GraphService
         var range = axis.Max - axis.Min;
         var xPositions = new float[graph.Points.Count];
         var yPositions = new float[graph.Points.Count];
+        var compareYPositions = graph.ComparePoints != null ? new float[graph.Points.Count] : null;
         for (var i = 0; i < graph.Points.Count; i++)
         {
             xPositions[i] = barStyle
                 ? plotLeft + (i + 0.5f) / graph.Points.Count * plotWidth
                 : plotLeft + (float)i / (graph.Points.Count - 1) * plotWidth;
             yPositions[i] = plotTop + (float)(1 - (graph.Points[i].Value - axis.Min) / range) * plotHeight;
+
+            if (compareYPositions != null)
+            {
+                compareYPositions[i] = plotTop +
+                                       (float)(1 - (graph.ComparePoints[i].Value - axis.Min) / range) * plotHeight;
+            }
         }
 
         var ticks = PlanDateTicks(graph, xPositions, font, scale);
@@ -315,13 +356,22 @@ public class GraphService
 
                 yPositions = DrawStackedBars(canvas, graph, xPositions, yPositions, basePositions, plotBottom,
                     plotWidth, scale);
+                DrawBarValues(canvas, barValues?[0], xPositions, yPositions, plotBottom, valueGap, scale, valueFont);
+            }
+            else if (compareYPositions != null)
+            {
+                var (primaryX, compareX) = DrawComparedBars(canvas, graph, xPositions, yPositions,
+                    compareYPositions, plotBottom, plotWidth, scale);
+                DrawBarValues(canvas, barValues?[0], primaryX, yPositions, plotBottom, valueGap, scale, valueFont);
+                DrawBarValues(canvas, barValues?[1], compareX, compareYPositions, plotBottom, valueGap, scale,
+                    valueFont);
             }
             else
             {
                 DrawBars(canvas, graph, xPositions, yPositions, plotBottom, plotWidth, scale);
+                DrawBarValues(canvas, barValues?[0], xPositions, yPositions, plotBottom, valueGap, scale, valueFont);
             }
 
-            DrawBarValues(canvas, barValues, xPositions, yPositions, plotBottom, valueGap, scale, valueFont);
             DrawDateLabels(canvas, graph, ticks, xPositions, plotBottom, scale, font, labelPaint);
             DrawLegend(canvas, graph, plotLeft, scale, valueFont, labelPaint);
 
@@ -381,7 +431,15 @@ public class GraphService
             canvas.DrawCircle(xPositions[^1], yPositions[^1], DotRadius * scale, dotPaint);
         }
 
+        if (compareYPositions != null)
+        {
+            var firstPlay = graph.ComparePoints.FindIndex(f => f.Value > 0);
+            DrawLine(canvas, xPositions, compareYPositions, Math.Max(firstPlay - 1, 0), graph.CompareColor,
+                graph.ShowEndDot, scale);
+        }
+
         DrawDateLabels(canvas, graph, ticks, xPositions, plotBottom, scale, font, labelPaint);
+        DrawLegend(canvas, graph, plotLeft, scale, valueFont, labelPaint);
 
         return EncodeSurface(surface);
     }
@@ -417,6 +475,77 @@ public class GraphService
                 new SKRect(xPositions[i] - barWidth / 2, top, xPositions[i] + barWidth / 2, plotBottom),
                 graph.LineColor, cornerRadius, capHeight);
         }
+    }
+
+    private static (float[] PrimaryX, float[] CompareX) DrawComparedBars(SKCanvas canvas, LineGraph graph,
+        float[] xPositions, float[] yPositions, float[] compareYPositions, float plotBottom, float plotWidth,
+        float scale)
+    {
+        var slot = plotWidth / graph.Points.Count;
+        var groupWidth = Math.Max(Math.Min(slot * 0.8f, slot - scale), 2 * scale);
+        var gap = Math.Min(BarGap * scale, groupWidth / 4);
+        var barWidth = (groupWidth - gap) / 2;
+        var offset = (barWidth + gap) / 2;
+        var capHeight = LineWidth * scale;
+        var cornerRadius = Math.Min(2.5f * scale, barWidth / 2);
+
+        var primaryX = new float[xPositions.Length];
+        var compareX = new float[xPositions.Length];
+
+        for (var i = 0; i < graph.Points.Count; i++)
+        {
+            primaryX[i] = xPositions[i] - offset;
+            compareX[i] = xPositions[i] + offset;
+
+            if (graph.Points[i].Value > 0)
+            {
+                var top = Math.Min(yPositions[i], plotBottom - capHeight);
+                DrawBarSegment(canvas,
+                    new SKRect(primaryX[i] - barWidth / 2, top, primaryX[i] + barWidth / 2, plotBottom),
+                    graph.LineColor, cornerRadius, capHeight);
+            }
+
+            if (graph.ComparePoints[i].Value > 0)
+            {
+                var top = Math.Min(compareYPositions[i], plotBottom - capHeight);
+                DrawBarSegment(canvas,
+                    new SKRect(compareX[i] - barWidth / 2, top, compareX[i] + barWidth / 2, plotBottom),
+                    graph.CompareColor, cornerRadius, capHeight);
+            }
+        }
+
+        return (primaryX, compareX);
+    }
+
+    private static void DrawLine(SKCanvas canvas, float[] xPositions, float[] yPositions, int start, SKColor color,
+        bool endDot, float scale)
+    {
+        using var pathBuilder = new SKPathBuilder();
+        pathBuilder.MoveTo(xPositions[start], yPositions[start]);
+        for (var i = start + 1; i < xPositions.Length; i++)
+        {
+            pathBuilder.LineTo(xPositions[i], yPositions[i]);
+        }
+
+        using var path = pathBuilder.Detach();
+        using var paint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = LineWidth * scale,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeJoin = SKStrokeJoin.Round,
+            Color = color
+        };
+        canvas.DrawPath(path, paint);
+
+        if (!endDot)
+        {
+            return;
+        }
+
+        paint.Style = SKPaintStyle.Fill;
+        canvas.DrawCircle(xPositions[^1], yPositions[^1], DotRadius * scale, paint);
     }
 
     private static float[] DrawStackedBars(SKCanvas canvas, LineGraph graph, float[] xPositions, float[] yPositions,
@@ -572,32 +701,37 @@ public class GraphService
         }
     }
 
-    private static string[] BarValueLabels(LineGraph graph, FallbackFont valueFont, float slot)
+    private static string[][] BarValueLabels(LineGraph graph, List<GraphPoint>[] series, FallbackFont valueFont,
+        float slot)
     {
         if (slot < valueFont.Size * 1.4f)
         {
             return null;
         }
 
-        return FittingBarValues(graph, valueFont, slot, value => FormatValue(graph, value)) ??
-               FittingBarValues(graph, valueFont, slot, value => CompactValue(graph, value));
+        return FittingBarValues(series, valueFont, slot, value => FormatValue(graph, value)) ??
+               FittingBarValues(series, valueFont, slot, value => CompactValue(graph, value));
     }
 
-    private static string[] FittingBarValues(LineGraph graph, FallbackFont valueFont, float slot,
+    private static string[][] FittingBarValues(List<GraphPoint>[] series, FallbackFont valueFont, float slot,
         Func<double, string> format)
     {
-        var labels = new string[graph.Points.Count];
-        for (var i = 0; i < graph.Points.Count; i++)
+        var labels = new string[series.Length][];
+        for (var s = 0; s < series.Length; s++)
         {
-            if (graph.Points[i].Value <= 0)
+            labels[s] = new string[series[s].Count];
+            for (var i = 0; i < series[s].Count; i++)
             {
-                continue;
-            }
+                if (series[s][i].Value <= 0)
+                {
+                    continue;
+                }
 
-            labels[i] = format(graph.Points[i].Value);
-            if (valueFont.MeasureText(labels[i]) > slot - valueFont.Size * 0.5f)
-            {
-                return null;
+                labels[s][i] = format(series[s][i].Value);
+                if (valueFont.MeasureText(labels[s][i]) > slot - valueFont.Size * 0.5f)
+                {
+                    return null;
+                }
             }
         }
 

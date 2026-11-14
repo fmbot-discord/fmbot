@@ -472,6 +472,9 @@
         "private": {
           "description": "Mostrar la respuesta solo a ti"
         },
+        "redirects": {
+          "description": "Alternar redirecciones de nombres de canción de Last.fm (activadas por defecto)"
+        },
         "track": {
           "description": "La canción que quieres buscar (por defecto, lo que estás escuchando)"
         }
@@ -558,6 +561,9 @@
         },
         "mode": {
           "description": "Tipo de respuesta que quieres - cambia el predeterminado con /mode"
+        },
+        "redirects": {
+          "description": "Alternar redirecciones de nombres de canción de Last.fm (activadas por defecto)"
         },
         "track": {
           "description": "La canción que quieres buscar (por defecto, lo que estás escuchando)"
@@ -1121,6 +1127,9 @@
     "track": {
       "description": "Muestra información de la canción que estás escuchando o buscando",
       "parameters": {
+        "redirects": {
+          "description": "Alternar redirecciones de nombres de canción de Last.fm (activadas por defecto)"
+        },
         "track": {
           "description": "La canción que quieres buscar (por defecto, lo que estás escuchando)"
         }
@@ -1137,6 +1146,9 @@
     "trackplays": {
       "description": "Muestra los plays de la canción actual o de la que estás buscando",
       "parameters": {
+        "redirects": {
+          "description": "Alternar redirecciones de nombres de canción de Last.fm (activadas por defecto)"
+        },
         "time-period": {
           "description": "Periodo de los plays a mostrar"
         },
@@ -1242,6 +1254,9 @@
         },
         "no-filter": {
           "description": "Desactivar los filtros del servidor"
+        },
+        "redirects": {
+          "description": "Alternar redirecciones de nombres de canción de Last.fm (activadas por defecto)"
         },
         "role-picker": {
           "description": "Mostrar un selector de roles para filtrar"
