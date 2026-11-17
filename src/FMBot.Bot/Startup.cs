@@ -336,6 +336,7 @@ public class Startup
             .AddSingleton<Core.AliasService>(sp => sp.GetRequiredService<AliasService>())
             .AddSingleton<ArtistsService>()
             .AddSingleton<CensorService>()
+            .AddSingleton<ChannelActivityService>()
             .AddSingleton<ChartService>()
             .AddSingleton<Core.AlbumFilterService>()
             .AddSingleton<Core.Charts.ChartDataService>()

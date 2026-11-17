@@ -43,7 +43,7 @@ public class PlaySlashCommands(
             Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -86,7 +86,7 @@ public class PlaySlashCommands(
             Description = "The track you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -125,7 +125,7 @@ public class PlaySlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task NowPlayingAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "embed-type",
             Description = "The embed type to use, can also be configured as a setting")]
@@ -189,7 +189,7 @@ public class PlaySlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task RecentAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "artist", Description = "Artist you want to filter on",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
@@ -221,7 +221,7 @@ public class PlaySlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task StreakAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -253,7 +253,7 @@ public class PlaySlashCommands(
     public async Task StreakHistory(
         [SlashCommandParameter(Name = "editmode", Description = "Enable or disable editor mode")]
         bool editMode = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "artist", Description = "The artist you want to filter your results to",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
@@ -283,7 +283,7 @@ public class PlaySlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task OverviewAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "amount", Description = "Amount of days to show")]
         int amount = 4)
@@ -324,7 +324,7 @@ public class PlaySlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period to base average scrobbles on",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -361,7 +361,7 @@ public class PlaySlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period to show scrobbles for",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -425,7 +425,7 @@ public class PlaySlashCommands(
         [SlashCommandParameter(Name = "artist", Description = "Show a milestone for a specific artist (supporters only)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string artist = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -466,7 +466,7 @@ public class PlaySlashCommands(
     public async Task YearAsync(
         [SlashCommandParameter(Name = "year", Description = "Year to view")]
         int? year = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -499,7 +499,7 @@ public class PlaySlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period to show (defaults to year)",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -536,7 +536,7 @@ public class PlaySlashCommands(
     public async Task ListeningGapsAsync(
         [SlashCommandParameter(Name = "type", Description = "Music gap type")]
         GapEntityType gapType = GapEntityType.Artist,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /mode")]

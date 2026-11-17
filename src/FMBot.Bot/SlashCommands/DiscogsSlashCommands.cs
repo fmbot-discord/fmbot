@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -97,7 +98,7 @@ public class DiscogsSlashCommands(
     public async Task AlbumAsync(
         [SlashCommandParameter(Name = "search", Description = "Search query to filter on")]
         string search = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "format", Description = "Media format to include")]
         DiscogsFormat? format = null)

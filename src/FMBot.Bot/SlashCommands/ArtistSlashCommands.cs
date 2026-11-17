@@ -68,7 +68,7 @@ public class ArtistSlashCommands(
         string name = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -102,7 +102,7 @@ public class ArtistSlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -137,7 +137,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period to show tracks for",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true)
@@ -166,7 +166,7 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period to show albums for",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true,
@@ -198,7 +198,7 @@ public class ArtistSlashCommands(
         int amount = 1,
         [SlashCommandParameter(Name = "time-period", Description = "Time period to base average playcount on")]
         ArtistPaceTimePeriod timePeriod = ArtistPaceTimePeriod.Monthly,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true)
@@ -365,7 +365,7 @@ public class ArtistSlashCommands(
     public async Task ArtistDiscoveriesAsync(
         [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "mode", Description = "The type of response you want - change default with /mode")]
         ResponseMode? mode = null,
@@ -414,7 +414,7 @@ public class ArtistSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task TasteAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to compare your taste with")]
+        [SlashCommandParameter(Name = "user", Description = "The user to compare your taste with", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user,
         [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
@@ -449,7 +449,7 @@ public class ArtistSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     [RequiresIndex]
-    public async Task AffinityAsync([SlashCommandParameter(Name = "user", Description = "The user to get the affinity for")] string user = null)
+    public async Task AffinityAsync([SlashCommandParameter(Name = "user", Description = "The user to get the affinity for", AutocompleteProviderType = typeof(UserAutoComplete))] string user = null)
     {
         this.Context.DeferInBackground();
 
@@ -480,7 +480,7 @@ public class ArtistSlashCommands(
     public async Task IcebergAsync(
         [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)

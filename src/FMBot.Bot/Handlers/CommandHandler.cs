@@ -45,6 +45,7 @@ public class CommandHandler
     private readonly GameBuilders _gameBuilders;
     private readonly ShortcutService _shortcutService;
     private readonly HelpBuilders _helpBuilders;
+    private readonly ChannelActivityService _channelActivityService;
 
     public CommandHandler(
         ShardedGatewayClient discord,
@@ -60,7 +61,8 @@ public class CommandHandler
         IndexService indexService,
         GameBuilders gameBuilders,
         ShortcutService shortcutService,
-        HelpBuilders helpBuilders)
+        HelpBuilders helpBuilders,
+        ChannelActivityService channelActivityService)
     {
         this._discord = discord;
         this._commands = commands;
@@ -75,6 +77,7 @@ public class CommandHandler
         this._gameBuilders = gameBuilders;
         this._shortcutService = shortcutService;
         this._helpBuilders = helpBuilders;
+        this._channelActivityService = channelActivityService;
         this._botSettings = botSettings.Value;
         this._discord.MessageCreate += MessageReceived;
         this._discord.MessageUpdate += MessageUpdated;
@@ -95,6 +98,11 @@ public class CommandHandler
 
             _ = Task.Run(async () => await TryScrobbling(msg, context));
             return ValueTask.CompletedTask;
+        }
+
+        if (context.Guild != null)
+        {
+            this._channelActivityService.AddUser(msg.ChannelId, msg.Author, false);
         }
 
         if (context.Guild != null &&
@@ -260,6 +268,11 @@ public class CommandHandler
         }
 
         context.Guild?.CacheInvoker(context.User);
+
+        if (context.Guild != null)
+        {
+            this._channelActivityService.AddUser(msg.ChannelId, context.User, true);
+        }
 
         using (Statistics.TextCommandHandlerDuration.NewTimer())
         {

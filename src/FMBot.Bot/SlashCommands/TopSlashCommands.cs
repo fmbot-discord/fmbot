@@ -41,7 +41,7 @@ public class TopSlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "billboard", Description = "Show top artists billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /mode")]
@@ -90,7 +90,7 @@ public class TopSlashCommands(
         string decade = null,
         [SlashCommandParameter(Name = "billboard", Description = "Show top albums billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /mode")]
@@ -133,7 +133,7 @@ public class TopSlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "billboard", Description = "Show top tracks billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /mode")]
@@ -169,7 +169,7 @@ public class TopSlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "billboard", Description = "Show top genres billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /mode")]
@@ -205,7 +205,7 @@ public class TopSlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "billboard", Description = "Show top countries billboard-style")]
         bool billboard = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "mode",
             Description = "The type of response you want - change default with /mode")]

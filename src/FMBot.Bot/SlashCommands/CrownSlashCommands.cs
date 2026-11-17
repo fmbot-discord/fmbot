@@ -34,7 +34,7 @@ public class CrownSlashCommands(
             Description = "The artist you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(ArtistAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to compare against the crown holder (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to compare against the crown holder (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -64,7 +64,7 @@ public class CrownSlashCommands(
     public async Task CrownOverViewAsync(
         [SlashCommandParameter(Name = "view", Description = "View of crowns you want to see")]
         CrownViewType viewType = CrownViewType.Playcount,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();

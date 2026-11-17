@@ -33,7 +33,7 @@ public class CountrySlashCommands(
         [SlashCommandParameter(Name = "search", Description = "The country or artist you want to view",
             AutocompleteProviderType = typeof(CountryArtistAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -61,7 +61,7 @@ public class CountrySlashCommands(
     public async Task CountryChartAsync(
         [SlashCommandParameter(Name = "time-period", Description = "Time period", AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "theme", Description = "Color theme for the map")]
         CountryChartTheme theme = CountryChartTheme.Dark,

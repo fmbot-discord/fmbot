@@ -426,7 +426,7 @@ public class UserSlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to judge")]
+        [SlashCommandParameter(Name = "user", Description = "The user to judge", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "language", Description = "Language for this judgement")]
         Language? language = null)
@@ -529,7 +529,7 @@ public class UserSlashCommands(
     public async Task FeaturedLogAsync(
         [SlashCommandParameter(Name = "view", Description = "Type of log you want to view")]
         FeaturedView view = FeaturedView.User,
-        [SlashCommandParameter(Name = "user", Description = "The user to view the featured log for (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to view the featured log for (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
@@ -549,7 +549,7 @@ public class UserSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task ProfileAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -570,7 +570,7 @@ public class UserSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task LastfmAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)

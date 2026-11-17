@@ -208,7 +208,7 @@ public class TrackSlashCommands(
         string timePeriod = null,
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm track name redirects (defaults to enabled)")]
         bool redirectsEnabled = true,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();
@@ -329,7 +329,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
@@ -363,7 +363,7 @@ public class TrackSlashCommands(
         IntegrationTypes = [ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall])]
     [UsernameSetRequired]
     public async Task LovedTracksAsync(
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)
@@ -430,7 +430,7 @@ public class TrackSlashCommands(
         [SlashCommandParameter(Name = "track", Description = "The track you want to scrobble",
             AutocompleteProviderType = typeof(TrackAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "user", Description = "View a user's recent tracks to scrobble from")]
+        [SlashCommandParameter(Name = "user", Description = "View a user's recent tracks to scrobble from", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = false)

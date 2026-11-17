@@ -200,7 +200,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "album", Description = "The album you want to search for (defaults to currently playing)",
             AutocompleteProviderType = typeof(AlbumAutoComplete))]
         string name = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "playcount-order", Description = "If the list should be ordered by playcount")]
         bool orderByPlaycount = false)
@@ -234,7 +234,7 @@ public class AlbumSlashCommands(
         [SlashCommandParameter(Name = "time-period", Description = "Time period to show plays for",
             AutocompleteProviderType = typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();

@@ -41,6 +41,7 @@ public class InteractionHandler
 
     private readonly IMemoryCache _cache;
     private readonly InteractiveService _interactivity;
+    private readonly ChannelActivityService _channelActivityService;
 
     public InteractionHandler(ShardedGatewayClient client,
         ApplicationCommandService<ApplicationCommandContext, AutocompleteInteractionContext> appCommands,
@@ -52,7 +53,8 @@ public class InteractionHandler
         IMemoryCache cache,
         GuildSettingBuilder guildSettingBuilder,
         InteractiveService interactivity,
-        CommandService<CommandContext> commands)
+        CommandService<CommandContext> commands,
+        ChannelActivityService channelActivityService)
     {
         this._client = client;
         this._appCommands = appCommands;
@@ -65,6 +67,7 @@ public class InteractionHandler
         this._guildSettingBuilder = guildSettingBuilder;
         this._interactivity = interactivity;
         this._commands = commands;
+        this._channelActivityService = channelActivityService;
         this._client.InteractionCreate += InteractionCreated;
     }
 
@@ -114,6 +117,12 @@ public class InteractionHandler
         {
             var context = new ApplicationCommandContext(slashCommand, client);
             context.Guild?.CacheInvoker(context.User);
+
+            if (context.Guild != null && context.Channel != null)
+            {
+                this._channelActivityService.AddUser(context.Channel.Id, context.User, true);
+            }
+
             var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
             var registeredCommandName = slashCommand.Data.Name;

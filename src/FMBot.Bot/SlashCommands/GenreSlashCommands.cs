@@ -34,7 +34,7 @@ public class GenreSlashCommands(
         [SlashCommandParameter(Name = "search", Description = "The genre or artist you want to view",
             AutocompleteProviderType = typeof(GenreArtistAutoComplete))]
         string search = null,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         this.Context.DeferInBackground();

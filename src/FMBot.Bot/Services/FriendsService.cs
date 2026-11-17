@@ -34,6 +34,18 @@ public class FriendsService
         return friends;
     }
 
+    public async Task<List<string>> GetRegisteredFriendNamesAsync(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Friends
+            .AsNoTracking()
+            .Where(w => w.UserId == userId && w.FriendUserId != null)
+            .OrderByDescending(o => o.FriendType == FriendType.CloseFriend)
+            .ThenByDescending(o => o.FriendType == FriendType.VisibleInNowPlaying)
+            .Select(s => s.FriendUser.UserNameLastFM)
+            .ToListAsync();
+    }
+
     public async Task<Friend> GetFriendAsync(int friendId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

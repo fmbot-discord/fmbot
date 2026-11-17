@@ -47,7 +47,7 @@ public class ChartSlashCommands(
         TitleSetting titleSetting = TitleSetting.Titles,
         [SlashCommandParameter(Name = "skip", Description = "Skip albums without an image")]
         bool skip = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "sfw", Description = "Safe for work images only")]
         bool sfwOnly = false,
@@ -119,7 +119,7 @@ public class ChartSlashCommands(
         TitleSetting titleSetting = TitleSetting.Titles,
         [SlashCommandParameter(Name = "skip", Description = "Skip artists without an image")]
         bool skip = false,
-        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to show (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null,
         [SlashCommandParameter(Name = "rainbow", Description = "Experimental rainbow setting")]
         bool rainbow = false,

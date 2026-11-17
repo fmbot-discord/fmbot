@@ -38,7 +38,7 @@ public class StaticSlashCommands(
     public async Task OutOfSyncAsync(
         [SlashCommandParameter(Name = "private", Description = "Only show response to you")]
         bool privateResponse = true,
-        [SlashCommandParameter(Name = "user", Description = "The user to check (defaults to self)")]
+        [SlashCommandParameter(Name = "user", Description = "The user to check (defaults to self)", AutocompleteProviderType = typeof(UserAutoComplete))]
         string user = null)
     {
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);

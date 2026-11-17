@@ -15,3 +15,5 @@ public enum GuildViewType
     Plays = 4
 }
 
+public record RecentChannelUser(ulong DiscordUserId, string DisplayName, string UserName);
+
