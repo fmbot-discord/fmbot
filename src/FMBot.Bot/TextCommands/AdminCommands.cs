@@ -3437,7 +3437,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     }
 
     [Command("movesupporter")]
-    [Summary("Move stripe supporter from one account to another")]
+    [Summary("Move supporter from one account to another")]
     public async Task MoveSupporter(string oldUserId = null, string newUserId = null)
     {
         try
@@ -3486,16 +3486,39 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 var stripeSupporter = await supporterService.GetStripeSupporter(oldDiscordUserId);
 
+                Persistence.Domain.Models.Supporter supporter = null;
                 if (stripeSupporter == null)
                 {
-                    await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
-                        new MessageProperties
-                            { Content = "Old user is not a Stripe supporter. At the moment only transferring Stripe supporters is supported." });
-                    await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
-                    return;
-                }
+                    if (oldUser == null)
+                    {
+                        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                            new MessageProperties
+                                { Content = "Old user could not be found and the id has no Stripe subscription. For deleted accounts only Stripe subscriptions can be transferred." });
+                        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                        return;
+                    }
 
-                if (oldUser == null)
+                    supporter = await supporterService.GetSupporterToMove(oldDiscordUserId);
+
+                    if (supporter?.SubscriptionType == SubscriptionType.Discord && supporter.Expired != true)
+                    {
+                        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                            new MessageProperties
+                                { Content = "Old user is subscribed through Discord. Discord subscriptions are tied to the Discord account and can't be transferred." });
+                        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                        return;
+                    }
+
+                    if (supporter?.SubscriptionType == SubscriptionType.Stripe)
+                    {
+                        await this.Context.Client.Rest.SendMessageAsync(this.Context.Message.ChannelId,
+                            new MessageProperties
+                                { Content = "Old user has a Stripe supporter record, but no Stripe subscription of their own was found (for example a gift that has ended). This can't be transferred." });
+                        await this.Context.LogCommandUsedAsync(new ResponseModel { CommandResponse = CommandResponse.WrongInput }, userService);
+                        return;
+                    }
+                }
+                else if (oldUser == null)
                 {
                     if (stripeSupporter.PurchaserDiscordUserId != oldDiscordUserId)
                     {
@@ -3519,10 +3542,35 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
                 var embed = new EmbedProperties();
 
-                var stripeDescription = new StringBuilder();
-                stripeDescription.AppendLine($"Customer ID: `{stripeSupporter.StripeCustomerId}`");
-                stripeDescription.AppendLine($"Subscription ID: `{stripeSupporter.StripeSubscriptionId}`");
-                embed.AddField("Stripe details", stripeDescription.ToString());
+                if (stripeSupporter != null)
+                {
+                    var stripeDescription = new StringBuilder();
+                    stripeDescription.AppendLine($"Customer ID: `{stripeSupporter.StripeCustomerId}`");
+                    stripeDescription.AppendLine($"Subscription ID: `{stripeSupporter.StripeSubscriptionId}`");
+                    embed.AddField("Stripe details", stripeDescription.ToString());
+                }
+                else if (supporter != null)
+                {
+                    var supporterDescription = new StringBuilder();
+                    supporterDescription.AppendLine(supporter.SubscriptionType.HasValue
+                        ? $"Type: `{Enum.GetName(supporter.SubscriptionType.Value)}`"
+                        : "Type: `Unknown`");
+                    supporterDescription.AppendLine($"Name: `{supporter.Name}`");
+                    if (supporter.Expired == true)
+                    {
+                        supporterDescription.AppendLine("Record is marked as expired");
+                    }
+                    if (!string.IsNullOrWhiteSpace(supporter.Notes))
+                    {
+                        supporterDescription.AppendLine($"Notes: `{supporter.Notes}`");
+                    }
+                    embed.AddField("Supporter details", supporterDescription.ToString());
+                }
+                else
+                {
+                    embed.AddField("Supporter details",
+                        "No supporter record found for the old user. A new record will be created for the new user.");
+                }
 
                 var oldUserDescription = new StringBuilder();
                 oldUserDescription.AppendLine($"`{oldDiscordUserId}` - <@{oldDiscordUserId}>");
@@ -3562,14 +3610,15 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                 embed.AddField($"New user - {newUser.UserId} {newUser.UserType.UserTypeToIcon()}",
                     newUserDescription.ToString());
 
-                if (!string.Equals(oldUser?.UserNameLastFM ?? stripeSupporter.PurchaserLastFmUserName,
+                if (!string.Equals(oldUser?.UserNameLastFM ?? stripeSupporter?.PurchaserLastFmUserName,
                         newUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
                 {
                     embed.AddField("⚠️ Warning ⚠️", "Last.fm usernames are different, are you sure?");
                 }
 
-                embed.WithDescription(
-                    "This will move over Stripe supporter from one user to another and update their details within the Stripe dashboard. This can take a few seconds to complete.");
+                embed.WithDescription(stripeSupporter != null
+                    ? "This will move over Stripe supporter from one user to another and update their details within the Stripe dashboard. This can take a few seconds to complete."
+                    : "This will move over supporter from one user to another. This can take a few seconds to complete.");
 
                 var components = new ActionRowProperties().WithButton("Move supporter",
                     customId: $"move-supporter:{oldDiscordUserId}:{newUser.DiscordUserId}", style: ButtonStyle.Danger);

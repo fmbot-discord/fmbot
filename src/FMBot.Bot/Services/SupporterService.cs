@@ -830,6 +830,16 @@ public class SupporterService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
+    public async Task<Supporter> GetSupporterToMove(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Supporters
+            .OrderBy(o => o.Expired ?? false)
+            .ThenByDescending(o => o.Created)
+            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+    }
+
     public async Task<StripeSupporter> GetStripeSupporter(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -2297,10 +2307,15 @@ public class SupporterService
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var supporter = await db.Supporters.FirstOrDefaultAsync(f => f.DiscordUserId == oldDiscordUserId);
+        var supporter = await db.Supporters
+            .OrderBy(o => o.Expired ?? false)
+            .ThenByDescending(o => o.Created)
+            .FirstOrDefaultAsync(f => f.DiscordUserId == oldDiscordUserId);
         if (supporter != null)
         {
-            supporter.Notes = $"Migrated from {oldDiscordUserId} to {newDiscordUserId}";
+            supporter.Notes = supporter.SubscriptionType == SubscriptionType.Stripe || string.IsNullOrWhiteSpace(supporter.Notes)
+                ? $"Migrated from {oldDiscordUserId} to {newDiscordUserId}"
+                : $"{supporter.Notes} - Migrated from {oldDiscordUserId} to {newDiscordUserId}";
             supporter.DiscordUserId = newDiscordUserId;
             db.Update(supporter);
         }
@@ -2346,7 +2361,7 @@ public class SupporterService
                 SupporterMessagesEnabled = true,
                 VisibleInOverview = true,
                 SupporterType = SupporterType.User,
-                SubscriptionType = SubscriptionType.Stripe
+                SubscriptionType = await GetStripeSupporter(oldDiscordUserId) != null ? SubscriptionType.Stripe : null
             };
 
             await db.Supporters.AddAsync(supporter);
