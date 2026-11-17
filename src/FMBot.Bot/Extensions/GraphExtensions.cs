@@ -24,7 +24,8 @@ public static class GraphExtensions
     public static async Task<MediaGalleryProperties> BuildPlayHistoryGraph(this GraphService graphService,
         ContextModel context, ResponseModel response, IReadOnlyList<DayPlayCount> dailyPlays, string fileName,
         GraphInterval? fixedInterval = null, int height = DefaultGraphHeight, DateTime? windowFrom = null,
-        DateTime? windowUntil = null, string windowTimeZone = null, NetCord.Color? imageColor = null)
+        DateTime? windowUntil = null, string windowTimeZone = null, NetCord.Color? imageColor = null,
+        IReadOnlyList<DayPlayCount> ownDailyPlays = null, string displayName = null)
     {
         if (dailyPlays == null || dailyPlays.Count == 0)
         {
@@ -37,25 +38,28 @@ public static class GraphExtensions
             return null;
         }
 
-        var points = new List<GraphPoint>(dailyPlays.Count);
-        foreach (var day in dailyPlays)
+        var lineColor = await GetLineColor(context, imageColor);
+
+        GraphComparison comparison = null;
+        if (ownDailyPlays is { Count: > 0 })
         {
-            points.Add(new GraphPoint
-            {
-                Date = day.Day,
-                Value = day.Plays
-            });
+            comparison = new GraphComparison(ToGraphPoints(ownDailyPlays), lineColor,
+                new GraphLegendItem(displayName, GraphColors.Grey),
+                new GraphLegendItem(context.DiscordUser is NetCord.GuildUser guildUser
+                    ? guildUser.GetDisplayName()
+                    : context.DiscordUser.GetDisplayName(), lineColor));
         }
 
-        var graph = graphService.RenderPlayHistory(points,
+        var graph = graphService.RenderPlayHistory(ToGraphPoints(dailyPlays),
             context.Localizer.Language.GetCultureInfo(),
-            await GetLineColor(context, imageColor),
+            comparison != null ? GraphColors.Grey : lineColor,
             value => value.Format(context.NumberFormat),
             fixedInterval,
             ToWindowStart(windowFrom, windowTimeZone),
             ToWindowEnd(windowUntil, windowTimeZone),
             height: height,
-            style: graphType);
+            style: graphType,
+            comparison: comparison);
 
         return AttachGraph(response, graph, fileName);
     }
@@ -92,6 +96,21 @@ public static class GraphExtensions
             dataSource.GetAttribute<OptionAttribute>().Name);
 
         return AttachGraph(response, graph, fileName);
+    }
+
+    private static List<GraphPoint> ToGraphPoints(IReadOnlyList<DayPlayCount> days)
+    {
+        var points = new List<GraphPoint>(days.Count);
+        foreach (var day in days)
+        {
+            points.Add(new GraphPoint
+            {
+                Date = day.Day,
+                Value = day.Plays
+            });
+        }
+
+        return points;
     }
 
     private static List<GraphPoint> ToGraphPoints(Dictionary<DateTime, double> days)

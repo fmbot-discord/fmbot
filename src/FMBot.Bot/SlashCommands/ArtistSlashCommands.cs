@@ -142,6 +142,8 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "redirects", Description = "Toggle Last.fm artist name redirects (defaults to enabled)")]
         bool redirectsEnabled = true)
     {
+        this.Context.DeferInBackground();
+
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
@@ -173,6 +175,8 @@ public class ArtistSlashCommands(
         [SlashCommandParameter(Name = "hide-singles", Description = "Hide singles from results")]
         bool hideSingles = false)
     {
+        this.Context.DeferInBackground();
+
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 

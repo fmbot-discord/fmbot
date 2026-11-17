@@ -10,6 +10,6 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: 11.0.x
     - name: Build with dotnet
       run: dotnet build ./src/FMBot.Discord.sln --configuration Release

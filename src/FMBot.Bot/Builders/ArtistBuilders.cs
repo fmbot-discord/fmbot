@@ -1848,6 +1848,14 @@ public class ArtistBuilders
                 artistSearch.Artist.ArtistName, timeSettings?.StartDateTime, timeSettings?.EndDateTime);
         }
 
+        Task<PlayHistorySummary> ownPlayHistoryTask = null;
+        if (showGraph && playHistoryTask != null && userSettings.DifferentUser &&
+            userSettings.UserId != context.ContextUser.UserId && context.GraphType != GraphType.Off)
+        {
+            ownPlayHistoryTask = this._playService.GetArtistPlayHistory(context.ContextUser.UserId,
+                artistSearch.Artist.ArtistName, timeSettings?.StartDateTime, timeSettings?.EndDateTime);
+        }
+
         var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (userSettings.DifferentUser)
@@ -1898,7 +1906,9 @@ public class ArtistBuilders
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "artist-plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,
-                windowTimeZone: userSettings.TimeZone)
+                windowTimeZone: userSettings.TimeZone,
+                ownDailyPlays: ownPlayHistoryTask != null ? (await ownPlayHistoryTask).DailyPlays : null,
+                displayName: userSettings.DisplayName)
             : null;
 
         response.TopLevelComponents.Add(new TextDisplayProperties(reply));

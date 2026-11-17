@@ -1140,6 +1140,15 @@ public class TrackBuilders
                 timeSettings?.StartDateTime, timeSettings?.EndDateTime);
         }
 
+        Task<PlayHistorySummary> ownPlayHistoryTask = null;
+        if (showGraph && playHistoryTask != null && userSettings.DifferentUser &&
+            userSettings.UserId != context.ContextUser.UserId && context.GraphType != GraphType.Off)
+        {
+            ownPlayHistoryTask = this._playService.GetTrackPlayHistory(context.ContextUser.UserId,
+                trackSearch.Track.ArtistName, trackSearch.Track.TrackName,
+                timeSettings?.StartDateTime, timeSettings?.EndDateTime);
+        }
+
         var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)
@@ -1200,7 +1209,9 @@ public class TrackBuilders
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "track-plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: timeSettings?.StartDateTime, windowUntil: timeSettings?.EndDateTime,
-                windowTimeZone: userSettings.TimeZone)
+                windowTimeZone: userSettings.TimeZone,
+                ownDailyPlays: ownPlayHistoryTask != null ? (await ownPlayHistoryTask).DailyPlays : null,
+                displayName: userSettings.DisplayName)
             : null;
 
         response.TopLevelComponents.Add(new TextDisplayProperties(reply));
@@ -2374,11 +2385,11 @@ public class TrackBuilders
 
         response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
             InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"),
-            "Get supporter", ButtonStyle.Primary))
+            context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
         {
             Components =
             [
-                new TextDisplayProperties("Viewing track lyrics in .fmbot is only available for .fmbot supporters.")
+                new TextDisplayProperties(context.Localize("supporter.wall.lyrics"))
             ]
         });
 
@@ -2387,11 +2398,11 @@ public class TrackBuilders
             response.ComponentsContainer.WithSeparator();
             response.ComponentsContainer.AddComponent(new ComponentSectionProperties(new ButtonProperties(
                 $"{InteractionConstants.PremiumServer.GetOverview}:lyrics",
-                "Premium server", ButtonStyle.Secondary))
+                context.Localize("buttons.premiumServer"), ButtonStyle.Secondary))
             {
                 Components =
                 [
-                    new TextDisplayProperties("Or unlock it for everyone in this server with Premium server.")
+                    new TextDisplayProperties(context.Localize("supporter.wall.lyricsPremiumServer"))
                 ]
             });
         }

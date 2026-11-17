@@ -1103,10 +1103,18 @@ public class PlayBuilder
         var allTime = timeSettings.TimePeriod == TimePeriod.AllTime;
 
         Task<UserPlayHistory> playHistoryTask = null;
+        Task<UserPlayHistory> ownPlayHistoryTask = null;
         if (context.ContextUser.UserType != UserType.User && userSettings.UserType != UserType.User)
         {
             playHistoryTask = this._playService.GetUserPlayHistory(userSettings.UserId,
                 allTime ? null : timeSettings.StartDateTime, allTime ? null : timeSettings.EndDateTime);
+
+            if (userSettings.DifferentUser && userSettings.UserId != context.ContextUser.UserId &&
+                context.GraphType != GraphType.Off)
+            {
+                ownPlayHistoryTask = this._playService.GetUserPlayHistory(context.ContextUser.UserId,
+                    allTime ? null : timeSettings.StartDateTime, allTime ? null : timeSettings.EndDateTime);
+            }
         }
 
         var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
@@ -1128,13 +1136,16 @@ public class PlayBuilder
             : context.LocalizeCount("plays.scrobblesInPeriod", count.Value, ("user", userTitle), ("period", context.Localizer.AltPeriodLabel(timeSettings)));
 
         var playHistory = playHistoryTask != null ? await playHistoryTask : null;
+        var ownPlayHistory = ownPlayHistoryTask != null ? await ownPlayHistoryTask : null;
 
         var playHistoryGraph = playHistory != null
             ? await this._graphService.BuildPlayHistoryGraph(context, response, playHistory.DailyPlays,
                 "plays.png", height: GraphExtensions.CompactGraphHeight,
                 windowFrom: allTime ? null : timeSettings.StartDateTime,
                 windowUntil: allTime ? null : timeSettings.EndDateTime,
-                windowTimeZone: userSettings.TimeZone)
+                windowTimeZone: userSettings.TimeZone,
+                ownDailyPlays: ownPlayHistory?.DailyPlays,
+                displayName: userSettings.DisplayName)
             : null;
 
         if (playHistoryGraph != null)
@@ -2162,7 +2173,7 @@ public class PlayBuilder
         }
 
         var supporterDescription = context.ContextUser.UserType == UserType.User
-            ? $"Want an extra page with your artist discoveries and a monthly overview? \n[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})"
+            ? context.Localize("supporter.upsell.yearPage", ("url", Constants.GetSupporterDiscordLink))
             : "";
 
         pages.Add(new PageBuilder()
@@ -2272,11 +2283,10 @@ public class PlayBuilder
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription(
-                $"To see the biggest gaps between when you listened to certain artists, we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
+            response.Embed.WithDescription(context.Localize("supporter.wall.gaps"));
 
             response.Components = new ActionRowProperties()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -2286,8 +2296,7 @@ public class PlayBuilder
 
         if (userSettings.UserType == UserType.User)
         {
-            response.Embed.WithDescription(
-                $"Sorry, the gaps command uses somebody's lifetime listening history. You can only use this command on other supporters.");
+            response.Embed.WithDescription(context.Localize("supporter.wall.gapsOther"));
 
             response.Components = new ActionRowProperties()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,

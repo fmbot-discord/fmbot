@@ -30,12 +30,13 @@ public class GameInteractions(
     [ComponentInteraction(InteractionConstants.Game.AddJumbleHint)]
     public async Task JumbleAddHint(string gameId)
     {
+        this.Context.DeferUpdateInBackground();
         var parsedGameId = int.Parse(gameId);
         var response = await gameBuilders.JumbleAddHint(new ContextModel(this.Context), parsedGameId);
 
         if (response.CommandResponse == CommandResponse.NotFound)
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.WaitForPendingDefer();
             return;
         }
 
@@ -45,12 +46,13 @@ public class GameInteractions(
     [ComponentInteraction(InteractionConstants.Game.JumbleUnblur)]
     public async Task JumbleUnblur(string gameId)
     {
+        this.Context.DeferUpdateInBackground();
         var parsedGameId = int.Parse(gameId);
         var response = await gameBuilders.JumbleUnblur(new ContextModel(this.Context), parsedGameId);
 
         if (response.CommandResponse == CommandResponse.NotFound)
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.WaitForPendingDefer();
             return;
         }
 
@@ -60,12 +62,13 @@ public class GameInteractions(
     [ComponentInteraction(InteractionConstants.Game.JumbleReshuffle)]
     public async Task JumbleReshuffle(string gameId)
     {
+        this.Context.DeferUpdateInBackground();
         var parsedGameId = int.Parse(gameId);
         var response = await gameBuilders.JumbleReshuffle(new ContextModel(this.Context), parsedGameId);
 
         if (response.CommandResponse == CommandResponse.NotFound)
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.WaitForPendingDefer();
             return;
         }
 
@@ -76,13 +79,14 @@ public class GameInteractions(
     [UsernameSetRequired]
     public async Task JumbleGiveUp(string gameId)
     {
+        this.Context.DeferUpdateInBackground();
         var parsedGameId = int.Parse(gameId);
         var contextUser = await userService.GetUserSettingsAsync(this.Context.User);
         var response = await gameBuilders.JumbleGiveUp(new ContextModel(this.Context, contextUser), parsedGameId);
 
         if (response.CommandResponse == CommandResponse.NotFound)
         {
-            await RespondAsync(InteractionCallback.DeferredModifyMessage);
+            await this.Context.WaitForPendingDefer();
             return;
         }
 

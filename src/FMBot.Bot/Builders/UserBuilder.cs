@@ -224,7 +224,7 @@ public class UserBuilder
 
         if (featured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
-            container.WithActionRow(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+            container.WithActionRow(new ActionRowProperties().WithButton(context.Localize("buttons.getFmbotSupporter"),
                 style: ButtonStyle.Secondary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                     source: "featured-onsupportersunday")));
@@ -685,13 +685,11 @@ public class UserBuilder
             var getSupporter = new ComponentSectionProperties(new ButtonProperties(
                 InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
                     false, source: "fmmode"),
-                "Get supporter", ButtonStyle.Primary))
+                context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
             {
                 Components =
                 [
-                    new TextDisplayProperties(
-                        "⭐ Unlock more customization with .fmbot supporter\n" +
-                        "-# Multiple buttons, extra footer options, custom colors and more")
+                    new TextDisplayProperties(context.Localize("supporter.upsell.fmMode"))
                 ]
             };
             container.WithSeparator();
@@ -895,13 +893,11 @@ public class UserBuilder
             var getSupporter = new ComponentSectionProperties(new ButtonProperties(
                 InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
                     false, source: "graphmode"),
-                "Get supporter", ButtonStyle.Primary))
+                context.Localize("buttons.getSupporter"), ButtonStyle.Primary))
             {
                 Components =
                 [
-                    new TextDisplayProperties(
-                        "⭐ Unlock graphs with .fmbot supporter\n" +
-                        "-# See your listening history over time as a line or bar graph")
+                    new TextDisplayProperties(context.Localize("supporter.upsell.graphs"))
                 ]
             };
             container.WithSeparator();
@@ -1234,7 +1230,7 @@ public class UserBuilder
                 if (view == FeaturedView.User && !userSettings.DifferentUser &&
                     !SupporterService.IsSupporter(context.ContextUser.UserType))
                 {
-                    container.WithActionRow(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+                    container.WithActionRow(new ActionRowProperties().WithButton(context.Localize("buttons.getFmbotSupporter"),
                         style: ButtonStyle.Secondary,
                         customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                             source: "featured-supportersunday")));
@@ -1997,11 +1993,10 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        response.Embed.WithDescription(
-            $"Only .fmbot supporters can set their own personal automatic emoji reactions.\n\n" +
-            $"Get .fmbot supporter or use `{prfx}serverreactions` as a server-wide alternative.");
+        response.Embed.WithDescription(context.Localize("supporter.wall.userReactions",
+            ("command", $"{prfx}serverreactions")));
 
-        response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+        response.Components = new ActionRowProperties().WithButton(context.Localize("buttons.getFmbotSupporter"),
             style: ButtonStyle.Primary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "userreactions"));
 
@@ -2726,7 +2721,7 @@ public class UserBuilder
             response.Embed.WithDescription(promoText.ToString());
 
             response.Components = new ActionRowProperties()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                .WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "user-shortcuts"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;

@@ -134,7 +134,8 @@ public class FriendInteractions(
                 supporterRequired.AddComponent(new TextDisplayProperties(
                     Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale)
                         .Translate("friends.closeFriendsSupporterOnly")));
-                supporterRequired.AddComponent(new ActionRowProperties().WithButton(Constants.GetSupporterButton,
+                supporterRequired.AddComponent(new ActionRowProperties().WithButton(
+                    Localizer.ForGuild(this.Context.Interaction.GuildId, discordLocale: this.Context.Interaction.GuildLocale).Translate("buttons.getFmbotSupporter"),
                     style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-closefriend")));
 

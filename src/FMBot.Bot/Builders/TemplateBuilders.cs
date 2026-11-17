@@ -178,10 +178,10 @@ public class TemplateBuilders
             ResponseType = ResponseType.Embed
         };
 
-        response.Embed.WithDescription($"Only supporters can configure templates and fully customize their fm commands.\n\n" +
-                                       $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
+        response.Embed.WithDescription(context.Localize("supporter.wall.templates",
+            ("url", Constants.GetSupporterDiscordLink)));
 
-        response.Components = new ActionRowProperties().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+        response.Components = new ActionRowProperties().WithButton(context.Localize("buttons.getFmbotSupporter"), style: ButtonStyle.Primary,
             customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-templates"));
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);

@@ -30,6 +30,9 @@ public class LineGraph
     public List<GraphPoint> BasePoints { get; init; }
     public SKColor BaseColor { get; init; } = GraphColors.FmbotBlue;
 
+    public List<GraphPoint> ComparePoints { get; init; }
+    public SKColor CompareColor { get; init; } = GraphColors.FmbotBlue;
+
     public List<GraphLegendItem> Legend { get; init; } = [];
     public string LegendNote { get; init; }
 
@@ -61,7 +64,11 @@ public static class GraphColors
     public static readonly SKColor FmbotBlue = new(0x56, 0x74, 0xB9);
     public static readonly SKColor Cyan = new(0x68, 0xDD, 0xE4);
     public static readonly SKColor LastFmRed = new(0xD5, 0x10, 0x07);
+    public static readonly SKColor Grey = new(0x93, 0xA1, 0xA6);
 }
+
+public record GraphComparison(IReadOnlyList<GraphPoint> DailyPlays, SKColor Color, GraphLegendItem PrimaryLegend,
+    GraphLegendItem CompareLegend);
 
 public record GraphTick(int Index, string Label);
 

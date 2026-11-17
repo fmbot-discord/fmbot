@@ -232,35 +232,24 @@ public class StaticBuilders
         var container = response.ComponentsContainer;
         container.WithAccentColor(DiscordConstants.InformationColorBlue);
 
-        container.WithTextDisplay("## ⭐ .fmbot supporter");
+        container.WithTextDisplay(context.Localize("supporter.panel.title"));
         container.WithSeparator();
 
         if (expandWithPerks)
         {
-            container.WithTextDisplay("**📈 Expanded commands & stats**\n" +
-                                      "-# Get expanded `.profile`, `.recap`, `.overview` and `.recent` commands, enable visual graphs, see all `.artistalbums` and `.artisttracks` results, and view lyrics right inside .fmbot.");
-
-            container.WithTextDisplay("**<:history:1131511469096312914> Import your history**\n" +
-                                      "-# Import and access your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
-
-            container.WithTextDisplay("**⚙️ More customization**\n" +
-                                      "-# Add close friends, configure shortcuts, customize your `fm` with exclusive options, and set your own global emoji reactions.");
-
-            container.WithTextDisplay("**🎮 Higher limits**\n" +
-                                      "-# Play unlimited Jumble and Pixel Jumble games, get better quality output on `.judge`, and add more friends.");
-
-            container.WithTextDisplay("**<:discoveries:1145740579284713512> Go back in time**\n" +
-                                      "-# See exactly when you discovered and re-discovered artists, albums, and tracks with the exclusive `.discoveries`, `.gaps`, `.discoverydate` and `.last` commands, and restore past streaks in `.streaks`.");
-
-            container.WithTextDisplay("**⭐ Exclusive supporter perks**\n" +
-                                      $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");
+            container.WithTextDisplay(context.Localize("supporter.perks.stats"));
+            container.WithTextDisplay(context.Localize("supporter.perks.import",
+                ("emote", "<:history:1131511469096312914>")));
+            container.WithTextDisplay(context.Localize("supporter.perks.customization"));
+            container.WithTextDisplay(context.Localize("supporter.perks.limits"));
+            container.WithTextDisplay(context.Localize("supporter.perks.history",
+                ("emote", "<:discoveries:1145740579284713512>")));
+            container.WithTextDisplay(context.LocalizeCount("supporter.perks.exclusive",
+                FeaturedService.GetDaysUntilNextSupporterSunday()));
         }
         else
         {
-            container.WithTextDisplay(
-                "⭐ Take your .fmbot experience to the next level with new features and benefits. " +
-                "Import and use your history, access extra statistics and graphs, play unlimited games, support development and much more. " +
-                "Please note that .fmbot is not affiliated with Last.fm.");
+            container.WithTextDisplay(context.Localize("supporter.panel.intro"));
         }
 
         var existingSupporter = await this._supporterService.GetSupporter(context.ContextUser.DiscordUserId);
@@ -273,8 +262,8 @@ public class StaticBuilders
             bottomButtons.AddComponents(new ButtonProperties(
                 $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:true:false:false:{source}",
                 SupporterService.IsSupporter(context.ContextUser.UserType)
-                    ? "Manage your supporter"
-                    : "Get .fmbot supporter",
+                    ? context.Localize("supporter.panel.manageYourSupporter")
+                    : context.Localize("buttons.getFmbotSupporter"),
                 ButtonStyle.Secondary));
         }
         else
@@ -288,31 +277,28 @@ public class StaticBuilders
                 {
                     container.AddComponent(new ComponentSectionProperties(
                         new ButtonProperties(InteractionConstants.SupporterLinks.ManageOverview,
-                            "View current supporter status", ButtonStyle.Secondary))
+                            context.Localize("supporter.panel.viewStatus"), ButtonStyle.Secondary))
                     {
                         Components =
                         [
-                            new TextDisplayProperties("**Thank you for being a supporter**\n" +
-                                                      "Use the button to manage your subscription.")
+                            new TextDisplayProperties(context.Localize("supporter.panel.thankYou"))
                         ]
                     });
                 }
                 else if (stripeSupporter.Type == StripeSupporterType.GiftedSupporter)
                 {
-                    container.WithTextDisplay("**Thank you for being a supporter**\n" +
-                                              "You have been gifted supporter status! Since this was a gift, you cannot manage this subscription directly.");
+                    container.WithTextDisplay(context.Localize("supporter.panel.thankYouGifted"));
                 }
                 else if (string.IsNullOrWhiteSpace(stripeSupporter.StripeSubscriptionId))
                 {
                     var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
 
                     container.AddComponent(new ComponentSectionProperties(
-                        new LinkButtonProperties(stripeManageLink, "Manage billing"))
+                        new LinkButtonProperties(stripeManageLink, context.Localize("supporter.panel.manageBilling")))
                     {
                         Components =
                         [
-                            new TextDisplayProperties("**Thank you for being a lifetime supporter**\n" +
-                                                      "You have lifetime supporter! If you still have an active subscription running, you can cancel it with the button.")
+                            new TextDisplayProperties(context.Localize("supporter.panel.thankYouLifetime"))
                         ]
                     });
                 }
@@ -321,12 +307,11 @@ public class StaticBuilders
                     var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
 
                     container.AddComponent(new ComponentSectionProperties(
-                        new LinkButtonProperties(stripeManageLink, "Manage subscription"))
+                        new LinkButtonProperties(stripeManageLink, context.Localize("supporter.panel.manageSubscription")))
                     {
                         Components =
                         [
-                            new TextDisplayProperties("**Thank you for being a supporter**\n" +
-                                                      "Use the button to manage your subscription.")
+                            new TextDisplayProperties(context.Localize("supporter.panel.thankYou"))
                         ]
                     });
                 }
@@ -344,17 +329,17 @@ public class StaticBuilders
                 var monthlyLinkTask = createLinks
                     ? this._supporterService.GetSupporterCheckoutLink(context.DiscordUser.Id,
                         context.DiscordUser.Username, context.ContextUser.UserNameLastFM, "monthly", pricing,
-                        stripeSupporter, source)
+                        stripeSupporter, source, userLocale)
                     : Task.FromResult<string>(null);
                 var yearlyLinkTask = createLinks
                     ? this._supporterService.GetSupporterCheckoutLink(context.DiscordUser.Id,
                         context.DiscordUser.Username, context.ContextUser.UserNameLastFM, "yearly", pricing,
-                        stripeSupporter, source)
+                        stripeSupporter, source, userLocale)
                     : Task.FromResult<string>(null);
                 var lifetimeLinkTask = createLinks && showLifetime
                     ? this._supporterService.GetSupporterCheckoutLink(context.DiscordUser.Id,
                         context.DiscordUser.Username, context.ContextUser.UserNameLastFM, "lifetime", pricing,
-                        stripeSupporter, source)
+                        stripeSupporter, source, userLocale)
                     : Task.FromResult<string>(null);
 
                 await Task.WhenAll(monthlyLinkTask, yearlyLinkTask, lifetimeLinkTask);
@@ -366,22 +351,24 @@ public class StaticBuilders
 
                 container.WithSeparator();
                 container.AddComponent(new ComponentSectionProperties(
-                    CheckoutButton(useDirectLinks, monthlyLinkTask.Result, "monthly", "Get monthly", source))
+                    CheckoutButton(useDirectLinks, monthlyLinkTask.Result, "monthly",
+                        context.Localize("supporter.panel.getMonthly"), source))
                 {
                     Components =
                     [
                         new TextDisplayProperties(
-                            $"**Monthly - {pricing.MonthlyPriceString}**\n-# {pricing.MonthlySubText}")
+                            $"{context.Localize("supporter.panel.monthlyOption", ("price", pricing.MonthlyPriceString))}\n-# {LocalizedSubText(context, pricing.MonthlySubText)}")
                     ]
                 });
                 container.WithSeparator();
                 container.AddComponent(new ComponentSectionProperties(
-                    CheckoutButton(useDirectLinks, yearlyLinkTask.Result, "yearly", "Get yearly", source))
+                    CheckoutButton(useDirectLinks, yearlyLinkTask.Result, "yearly",
+                        context.Localize("supporter.panel.getYearly"), source))
                 {
                     Components =
                     [
                         new TextDisplayProperties(
-                            $"**Yearly - {pricing.YearlyPriceString}**\n-# {pricing.YearlySubText}")
+                            $"{context.Localize("supporter.panel.yearlyOption", ("price", pricing.YearlyPriceString))}\n-# {LocalizedSubText(context, pricing.YearlySubText)}")
                     ]
                 });
 
@@ -389,12 +376,13 @@ public class StaticBuilders
                 {
                     container.WithSeparator();
                     container.AddComponent(new ComponentSectionProperties(
-                        CheckoutButton(useDirectLinks, lifetimeLinkTask.Result, "lifetime", "Get lifetime", source))
+                        CheckoutButton(useDirectLinks, lifetimeLinkTask.Result, "lifetime",
+                            context.Localize("supporter.panel.getLifetime"), source))
                     {
                         Components =
                         [
                             new TextDisplayProperties(
-                                $"**Lifetime - {pricing.LifetimePriceString}**\n-# {pricing.LifetimeSubText}")
+                                $"{context.Localize("supporter.panel.lifetimeOption", ("price", pricing.LifetimePriceString))}\n-# {LocalizedSubText(context, pricing.LifetimeSubText)}")
                         ]
                     });
                 }
@@ -407,13 +395,13 @@ public class StaticBuilders
             {
                 bottomButtons.AddComponents(new ButtonProperties(
                     $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:false:true:{source}",
-                    "Hide all perks", ButtonStyle.Secondary));
+                    context.Localize("supporter.panel.hidePerks"), ButtonStyle.Secondary));
             }
             else
             {
                 bottomButtons.AddComponents(new ButtonProperties(
                     $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}:false:true:true:{source}",
-                    "View all perks", ButtonStyle.Secondary));
+                    context.Localize("supporter.panel.viewPerks"), ButtonStyle.Secondary));
             }
         }
 
@@ -424,6 +412,16 @@ public class StaticBuilders
         }
 
         return response;
+    }
+
+    private static string LocalizedSubText(ContextModel context, string subText)
+    {
+        if (subText != null && subText.EndsWith(" per month", StringComparison.Ordinal))
+        {
+            return context.Localize("supporter.panel.perMonth", ("price", subText[..^" per month".Length]));
+        }
+
+        return subText;
     }
 
     private static IButtonProperties CheckoutButton(bool useDirectLink, string link, string type, string label,

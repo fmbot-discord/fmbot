@@ -597,7 +597,7 @@ public class HelpBuilders(HelpService helpService)
             {
                 purchaseRow.AddComponents(new ButtonProperties(
                     InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: $"help-{purchaseSource}"),
-                    Constants.GetSupporterButton, ButtonStyle.Primary)
+                    context.Localize("buttons.getFmbotSupporter"), ButtonStyle.Primary)
                 {
                     Emoji = EmojiProperties.Standard("⭐")
                 });
